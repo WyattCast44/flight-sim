@@ -7,7 +7,6 @@ Type-safe, immutable **physical quantity** value objects for a 6DOF flight simul
 - **Single source of truth** — Each concrete unit is its own class with a `readonly value` in that unit’s numeric representation.
 - **Strongly typed conversions** — Within a category (e.g. `Length`), every instance exposes `toMeters()`, `toFeet()`, and so on; you cannot accidentally mix categories at compile time.
 - **Immutable** — Values are read-only; conversions return new instances.
-- **Metric-first physics** — Integrators, aerodynamics, and rigid-body code should work in SI bases (meters, kilograms, newtons, pascals, radians, kelvin, seconds, etc.). Imperial and cockpit units are for I/O and display.
 - **Fail-fast** — `NaN`, non-finite numbers, and invalid domains (e.g. negative mass) throw `UnitValueError` at construction.
 - **Abstract category + concrete units** — Each category has an abstract base class declaring all `to…()` methods; each unit implements them. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -36,18 +35,18 @@ For local development, the root `tsconfig` may map `@flight-sim/units` to `./pac
 ```typescript
 import { Knots, Meters, Pascals, MeanSeaLevel } from "@flight-sim/units";
 
-const speed = Knots.fromKnots(250);
-const si = speed.toMetersPerSecond();
-console.log(si.value); // m/s for physics
+const length = new Feet(100);
+const lengthInMeters = length.toMeters();
+console.log(lengthInMeters.value); // 30.48 m
 
-const len = Meters.fromMeters(1852);
-console.log(len.toNauticalMiles().toString()); // "1.00 NM"
+const lengthInNauticalMiles = length.toNauticalMiles();
+console.log(lengthInNauticalMiles.value); // 0.054 NM
 
-const qnh = Pascals.fromHectopascals(1013);
-console.log(qnh.toPoundsPerSquareInch().toString());
+const lengthInKilometers = length.toKilometers();
+console.log(lengthInKilometers.value); // 0.091 km
 
-const alt = MeanSeaLevel.fromFeet(35000);
-console.log(alt.toMeters().value); // same numeric conversions as Length; label is MSL
+const lengthInInches = length.toInches();
+console.log(lengthInInches.value); // 1200 in
 ```
 
 Default `toString()` uses two decimal places; use `.value` and `.getStringUnits()` for custom formatting.
