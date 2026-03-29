@@ -10,7 +10,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/units/units/**/*.ts"],
+      include: ["src/**/*.ts"],
       exclude: ["**/constants.ts"],
       // Primary bar: 80% statements/lines. Branches/functions stay lower (angleMath ternary, many `to*` methods).
       thresholds: {
