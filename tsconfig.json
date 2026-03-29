@@ -1,5 +1,8 @@
 {
-  "paths": {
-    "@flight-sim/units": ["./packages/units/src"]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@flight-sim/units": ["./packages/units/src"]
+    }
   }
 }
