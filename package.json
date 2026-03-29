@@ -1,0 +1,18 @@
+{
+  "name": "flight-sim",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint"
+  },
+  "dependencies": {
+    "turbo": "^2.8.21",
+    "typescript": "^6.0.2",
+    "@flight-sim/units": "workspace:*"
+  }
+}
