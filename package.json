@@ -11,9 +11,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "turbo": "^2.8.21",
-    "typescript": "^6.0.2",
-    "@flight-sim/units": "workspace:*"
+    "typescript": "^6.0.2"
   }
 }
