@@ -1,6 +1,7 @@
 {
   "name": "flight-sim",
   "private": true,
+  "type": "module",
   "packageManager": "npm@10.9.4",
   "workspaces": [
     "packages/*"

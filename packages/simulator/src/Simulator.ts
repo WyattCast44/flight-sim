@@ -1,3 +1,5 @@
+import { scheduleFrame } from "./scheduleFrame.js";
+
 export class Simulator {
   private _isRunning = false; // Has the simulator been started and not stopped?
   private _isPaused = false; // Is time currently frozen?
@@ -99,7 +101,7 @@ export class Simulator {
 
   private requestNextFrame(): void {
     if (!this._isRunning) return;
-    requestAnimationFrame(this.frameCallback);
+    scheduleFrame(this.frameCallback);
   }
 
   private frameCallback = (wallNow: number): void => {
