@@ -1,0 +1,8 @@
+import { KILOGRAMS_PER_SLUG } from "../mass/constants.js";
+
+const METERS_PER_FOOT = 0.3048;
+const CUBIC_METERS_PER_CUBIC_FOOT = METERS_PER_FOOT ** 3;
+
+/** slug / ft³ → kg / m³ */
+export const KILOGRAMS_PER_CUBIC_METER_PER_SLUG_PER_CUBIC_FOOT =
+  KILOGRAMS_PER_SLUG / CUBIC_METERS_PER_CUBIC_FOOT;

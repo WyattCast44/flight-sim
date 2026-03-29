@@ -15,6 +15,9 @@
     "incremental": true,
 
     "strict": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
