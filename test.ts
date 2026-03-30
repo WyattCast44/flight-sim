@@ -7,11 +7,11 @@ const simulator = new Simulator({ tickRate: 60 });
 let duration = new Seconds(1).toMilliseconds().value;
 
 simulator.onBeforePhysicsStep((dt) => {
-  console.log("before step");
+  logger.info("before step", { dt });
 });
 
 simulator.onAfterPhysicsStep((dt) => {
-  console.log("after step");
+  logger.info("after step", { dt });
 });
 
 setTimeout(() => {
