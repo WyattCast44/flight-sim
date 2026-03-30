@@ -2,14 +2,10 @@
 /// <reference lib="dom" />
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { SIMULATOR_PACKAGE_VERSION } from "@flight-sim/simulator";
+import { logger, NoopDriver } from "@flight-sim/logging";
+import type { LogDriver, LogLevel } from "@flight-sim/logging";
 import { Simulator } from "../src/Simulator.js";
-
-describe("@flight-sim/simulator", () => {
-  it("exports a version string", () => {
-    expect(SIMULATOR_PACKAGE_VERSION).toBe("0.1.0");
-  });
-});
+import { cancelScheduledFrame, scheduleFrame } from "../src/scheduleFrame.js";
 
 describe("Simulator", () => {
   let simulator: Simulator;
@@ -17,6 +13,7 @@ describe("Simulator", () => {
   let afterStepSpy: ReturnType<typeof vi.fn<(dt: number) => void>>;
 
   beforeEach(() => {
+    logger.setDriver(new NoopDriver());
     simulator = new Simulator({ tickRate: 60 }); // 60 Hz for easier testing
     beforeStepSpy = vi.fn<() => void>();
     afterStepSpy = vi.fn<(dt: number) => void>();
@@ -126,7 +123,13 @@ describe("Simulator", () => {
 
   describe("callback safety", () => {
     it("continues running even if a callback throws", async () => {
-      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const logRecords: Array<{ level: LogLevel; message: string; context?: Record<string, unknown> }> = [];
+      const capturingDriver: LogDriver = {
+        log(level, message, context) {
+          logRecords.push({ level, message, context });
+        },
+      };
+      logger.setDriver(capturingDriver);
 
       simulator.onBeforePhysicsStep(() => {
         throw new Error("Boom!");
@@ -140,10 +143,12 @@ describe("Simulator", () => {
 
       simulator.stop();
 
-      expect(errorSpy).toHaveBeenCalled();
+      expect(logRecords.length).toBeGreaterThan(0);
+      expect(logRecords[0]!.level).toBe("error");
+      expect(logRecords[0]!.context).toHaveProperty("hook", "onBeforePhysicsStep");
       expect(afterStepSpy).toHaveBeenCalled(); // other callbacks still run
 
-      errorSpy.mockRestore();
+      logger.setDriver(new NoopDriver());
     });
   });
 
@@ -165,6 +170,23 @@ describe("Simulator", () => {
       // In ~100ms real time at 3x speed → ~300ms simulation time
       // With 1/60 fixed step, we expect roughly 18 calls
       expect(afterSpy.mock.calls.length).toBeGreaterThan(15);
+    });
+  });
+
+  describe("scheduleFrame", () => {
+    it("schedules a frame", () => {
+      const callback = vi.fn();
+      vi.useFakeTimers();
+      scheduleFrame(callback);
+      vi.advanceTimersByTime(100);
+      expect(callback).toHaveBeenCalled();
+    });
+
+    it("cancels a scheduled frame", () => {
+      const callback = vi.fn();
+      const handle = scheduleFrame(callback);
+      cancelScheduledFrame(handle);
+      expect(callback).not.toHaveBeenCalled();
     });
   });
 });

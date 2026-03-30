@@ -11,7 +11,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["**/constants.ts"],
       thresholds: {
         statements: 70,
         lines: 70,
@@ -22,8 +21,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@flight-sim/simulator": path.resolve(dirname, "src/index.ts"),
-      "@flight-sim/logging": path.resolve(dirname, "../logging/src/index.ts"),
+      "@flight-sim/logging": path.resolve(dirname, "src/index.ts"),
     },
   },
 });

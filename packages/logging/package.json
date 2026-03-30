@@ -1,5 +1,5 @@
 {
-  "name": "@flight-sim/simulator",
+  "name": "@flight-sim/logging",
   "version": "0.1.0",
   "private": false,
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flight-sim/logging": "*"
+    "pino": "^9.6.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.2",

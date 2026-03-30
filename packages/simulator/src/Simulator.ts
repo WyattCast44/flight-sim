@@ -1,3 +1,4 @@
+import { logger } from "@flight-sim/logging";
 import { scheduleFrame } from "./scheduleFrame.js";
 
 export class Simulator {
@@ -130,7 +131,7 @@ export class Simulator {
       try {
         callback(dt);
       } catch (error) {
-        console.error("Error in onBeforePhysicsStep callback:", error);
+        logger.error("Error in physics step callback", { hook: "onBeforePhysicsStep", error });
       }
     }
   }
@@ -140,7 +141,7 @@ export class Simulator {
       try {
         callback(dt);
       } catch (error) {
-        console.error("Error in onAfterPhysicsStep callback:", error);
+        logger.error("Error in physics step callback", { hook: "onAfterPhysicsStep", error });
       }
     }
   }
