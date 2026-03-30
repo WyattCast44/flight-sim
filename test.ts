@@ -1,4 +1,5 @@
 
+import { logger } from "@flight-sim/logging";
 import { Simulator } from "@flight-sim/simulator";
 import { Seconds } from "@flight-sim/units";
 
@@ -18,3 +19,5 @@ setTimeout(() => {
 }, duration);
 
 simulator.start();
+
+logger.error("Simulation stopped");
