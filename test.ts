@@ -1,23 +1,24 @@
 
 import { Simulator } from "@flight-sim/simulator";
+import { Seconds } from "@flight-sim/units";
 
-const simulator = new Simulator({ tickRate: 120 });
+const simulator = new Simulator({ tickRate: 60 });
 
 let numberOfSteps = 0;
+let duration = new Seconds(1).toMilliseconds().value;
 
-simulator.onBeforePhysicsStep(() => {
+simulator.onBeforePhysicsStep((dt) => {
   console.log("before step");
 });
 
 simulator.onAfterPhysicsStep((dt) => {
-  numberOfSteps++;
-  console.log("after step", numberOfSteps);
+  console.log("after step");
 });
-
-simulator.start();
 
 setTimeout(() => {
   simulator.stop();
-}, 2000);
+}, duration);
+
+simulator.start();
 
 console.log("numberOfSteps", numberOfSteps);

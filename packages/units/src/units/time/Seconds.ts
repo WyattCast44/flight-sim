@@ -4,11 +4,16 @@ import { Time } from "../../categories/Time.js";
 import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "./constants.js";
 import { Hours } from "./Hours.js";
 import { Minutes } from "./Minutes.js";
+import { Milliseconds } from "./Milliseconds.js";
 
 export class Seconds extends Time {
   constructor(public readonly value: number) {
     super();
     assertNonNegative(value, "Seconds");
+  }
+
+  static fromMilliseconds(value: number): Seconds {
+    return new Seconds(value / 1000);
   }
 
   static fromSeconds(value: number): Seconds {
@@ -21,6 +26,10 @@ export class Seconds extends Time {
 
   static fromHours(value: number): Seconds {
     return new Seconds(value * SECONDS_PER_HOUR);
+  }
+
+  toMilliseconds(): Milliseconds {
+    return new Milliseconds(this.value * 1000);
   }
 
   toSeconds(): Seconds {

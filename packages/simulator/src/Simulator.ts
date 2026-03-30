@@ -11,7 +11,7 @@ export class Simulator {
   /** Fixed physics timestep (e.g. 1/240 seconds) */
   public readonly fixedTimeStep: number;
 
-  private readonly onBeforeStep: Array<() => void> = [];
+  private readonly onBeforeStep: Array<(dt: number) => void> = [];
   private readonly onAfterStep: Array<(dt: number) => void> = [];
 
   constructor(options: { tickRate?: number } = {}) {
@@ -83,7 +83,7 @@ export class Simulator {
    * Register a callback that runs **before** each fixed physics step.
    * Good for reading input, updating controls, etc.
    */
-  public onBeforePhysicsStep(callback: () => void): void {
+  public onBeforePhysicsStep(callback: (dt: number) => void): void {
     this.onBeforeStep.push(callback);
   }
 
@@ -116,7 +116,7 @@ export class Simulator {
       this.accumulator += dt;
 
       while (this.accumulator >= this.fixedTimeStep) {
-        this.executeBeforeStep();
+        this.executeBeforeStep(this.fixedTimeStep);
         this.executeAfterStep(this.fixedTimeStep);
         this.accumulator -= this.fixedTimeStep;
       }
@@ -125,10 +125,10 @@ export class Simulator {
     this.requestNextFrame();
   };
 
-  private executeBeforeStep(): void {
+  private executeBeforeStep(dt: number): void {
     for (const callback of this.onBeforeStep) {
       try {
-        callback();
+        callback(dt);
       } catch (error) {
         console.error("Error in onBeforePhysicsStep callback:", error);
       }

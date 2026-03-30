@@ -78,3 +78,4 @@ export { Radians } from "./units/angles/Radians.js";
 export { Hours } from "./units/time/Hours.js";
 export { Minutes } from "./units/time/Minutes.js";
 export { Seconds } from "./units/time/Seconds.js";
+export { Milliseconds } from "./units/time/Milliseconds.js";
