@@ -349,6 +349,76 @@ describe("Simulator", () => {
     });
   });
 
+  describe("runFor", () => {
+    it("starts and stops after the specified simulation seconds", async () => {
+      const stopSpy = vi.fn();
+      simulator.onStop(stopSpy);
+
+      simulator.runFor(0.05); // 50ms of sim time
+      expect(simulator.isRunning()).toBe(true);
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 150);
+      });
+
+      expect(simulator.isRunning()).toBe(false);
+      expect(stopSpy).toHaveBeenCalledOnce();
+    });
+
+    it("respects timeScale (faster sim time at higher scale)", async () => {
+      const afterSpy = vi.fn<(dt: number) => void>();
+      const fastSim = new Simulator({ tickRate: 60 });
+      fastSim.onAfterTick(afterSpy);
+      fastSim.setTimeScale(10.0); // 10x speed
+
+      fastSim.runFor(0.5); // 0.5 sim seconds = ~50ms wall time at 10x
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 200);
+      });
+
+      expect(fastSim.isRunning()).toBe(false);
+      // At 60Hz, 0.5 sim seconds = ~30 ticks
+      expect(afterSpy.mock.calls.length).toBeGreaterThanOrEqual(25);
+    });
+
+    it("clears runFor target when stop() is called manually", async () => {
+      const stopSpy = vi.fn();
+      simulator.onStop(stopSpy);
+
+      simulator.runFor(10); // Long duration
+      simulator.stop(); // Manual stop
+
+      expect(simulator.isRunning()).toBe(false);
+      expect(stopSpy).toHaveBeenCalledOnce();
+
+      // Restarting should not auto-stop
+      simulator.start();
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50);
+      });
+      expect(simulator.isRunning()).toBe(true);
+      simulator.stop();
+    });
+
+    it("fires onStart and onStop callbacks", async () => {
+      const startSpy = vi.fn();
+      const stopSpy = vi.fn();
+      simulator.onStart(startSpy);
+      simulator.onStop(stopSpy);
+
+      simulator.runFor(0.02);
+
+      expect(startSpy).toHaveBeenCalledOnce();
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 150);
+      });
+
+      expect(stopSpy).toHaveBeenCalledOnce();
+    });
+  });
+
   describe("scheduleFrame", () => {
     it("schedules a frame", () => {
       const callback = vi.fn();

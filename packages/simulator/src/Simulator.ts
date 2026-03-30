@@ -8,6 +8,8 @@ export class Simulator {
 
   private lastWallTime = 0;
   private accumulator = 0;
+  private elapsedSimTime = 0;
+  private runForTarget: number | null = null;
 
   /** Fixed physics timestep (e.g. 1/240 seconds) */
   public readonly fixedTimeStep: number;
@@ -34,6 +36,7 @@ export class Simulator {
     this._isPaused = false;
     this.lastWallTime = performance.now();
     this.accumulator = 0;
+    this.elapsedSimTime = 0;
     this.executeCallbacks(this.startCallbacks, "onStart");
     this.requestNextFrame();
   }
@@ -59,6 +62,7 @@ export class Simulator {
     if (!this._isRunning) return;
     this._isRunning = false;
     this._isPaused = true;
+    this.runForTarget = null;
     this.executeCallbacks(this.stopCallbacks, "onStop");
   }
 
@@ -85,6 +89,13 @@ export class Simulator {
 
   public getTimeScale(): number {
     return this.timeScale;
+  }
+
+  /** Start the simulator and automatically stop after the given number of simulation seconds. */
+  public runFor(seconds: number): void {
+    this.runForTarget = seconds;
+    this.elapsedSimTime = 0;
+    this.start();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -155,6 +166,7 @@ export class Simulator {
       // ← Only advance if not paused
       const dt = (wallDeltaMs / 1000) * this.timeScale;
       this.accumulator += dt;
+      this.elapsedSimTime += dt;
 
       while (this.accumulator >= this.fixedTimeStep) {
         this.executeBeforeTick(this.fixedTimeStep);
@@ -164,6 +176,11 @@ export class Simulator {
 
       const alpha = this.accumulator / this.fixedTimeStep;
       this.executeFrame(alpha);
+
+      if (this.runForTarget !== null && this.elapsedSimTime >= this.runForTarget) {
+        this.stop();
+        return;
+      }
     }
 
     this.requestNextFrame();
