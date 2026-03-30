@@ -18,10 +18,10 @@ describe("Simulator", () => {
     beforeStepSpy = vi.fn<() => void>();
     afterStepSpy = vi.fn<(dt: number) => void>();
 
-    simulator.onBeforePhysicsStep(() => {
+    simulator.onBeforeTick(() => {
       beforeStepSpy();
     });
-    simulator.onAfterPhysicsStep((dt) => {
+    simulator.onAfterTick((dt) => {
       afterStepSpy(dt);
     });
   });
@@ -131,7 +131,7 @@ describe("Simulator", () => {
       };
       logger.setDriver(capturingDriver);
 
-      simulator.onBeforePhysicsStep(() => {
+      simulator.onBeforeTick(() => {
         throw new Error("Boom!");
       });
 
@@ -145,7 +145,7 @@ describe("Simulator", () => {
 
       expect(logRecords.length).toBeGreaterThan(0);
       expect(logRecords[0]!.level).toBe("error");
-      expect(logRecords[0]!.context).toHaveProperty("hook", "onBeforePhysicsStep");
+      expect(logRecords[0]!.context).toHaveProperty("hook", "onBeforeTick");
       expect(afterStepSpy).toHaveBeenCalled(); // other callbacks still run
 
       logger.setDriver(new NoopDriver());
@@ -157,7 +157,7 @@ describe("Simulator", () => {
       const fastSimulator = new Simulator({ tickRate: 60 });
       const afterSpy = vi.fn<(dt: number) => void>();
 
-      fastSimulator.onAfterPhysicsStep(afterSpy);
+      fastSimulator.onAfterTick(afterSpy);
       fastSimulator.setTimeScale(3.0); // 3x speed
       fastSimulator.start();
 
@@ -170,6 +170,182 @@ describe("Simulator", () => {
       // In ~100ms real time at 3x speed → ~300ms simulation time
       // With 1/60 fixed step, we expect roughly 18 calls
       expect(afterSpy.mock.calls.length).toBeGreaterThan(15);
+    });
+  });
+
+  describe("onFrame", () => {
+    it("calls frame callbacks once per frame with interpolation alpha", async () => {
+      const frameSpy = vi.fn<(alpha: number) => void>();
+      simulator.onFrame(frameSpy);
+
+      simulator.start();
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50);
+      });
+
+      simulator.stop();
+
+      expect(frameSpy).toHaveBeenCalled();
+      // Alpha should always be between 0 and 1
+      frameSpy.mock.calls.forEach(([alpha]) => {
+        expect(alpha).toBeGreaterThanOrEqual(0);
+        expect(alpha).toBeLessThan(1);
+      });
+    });
+
+    it("does NOT call frame callbacks when paused", async () => {
+      const frameSpy = vi.fn<(alpha: number) => void>();
+      simulator.onFrame(frameSpy);
+
+      simulator.start();
+      simulator.pause();
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50);
+      });
+
+      simulator.stop();
+
+      expect(frameSpy).not.toHaveBeenCalled();
+    });
+
+    it("continues running even if a frame callback throws", async () => {
+      const logRecords: Array<{ level: LogLevel; message: string; context?: Record<string, unknown> }> = [];
+      const capturingDriver: LogDriver = {
+        log(level, message, context) {
+          logRecords.push({ level, message, context });
+        },
+      };
+      logger.setDriver(capturingDriver);
+
+      simulator.onFrame(() => {
+        throw new Error("Frame boom!");
+      });
+
+      simulator.start();
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50);
+      });
+
+      simulator.stop();
+
+      const frameErrors = logRecords.filter((r) => r.context?.hook === "onFrame");
+      expect(frameErrors.length).toBeGreaterThan(0);
+      expect(frameErrors[0]!.level).toBe("error");
+
+      logger.setDriver(new NoopDriver());
+    });
+  });
+
+  describe("lifecycle hooks", () => {
+    it("calls onStart callbacks when started", () => {
+      const startSpy = vi.fn();
+      simulator.onStart(startSpy);
+
+      simulator.start();
+      expect(startSpy).toHaveBeenCalledOnce();
+
+      simulator.stop();
+    });
+
+    it("does not call onStart if already running", () => {
+      const startSpy = vi.fn();
+      simulator.onStart(startSpy);
+
+      simulator.start();
+      simulator.start(); // no-op
+      expect(startSpy).toHaveBeenCalledOnce();
+
+      simulator.stop();
+    });
+
+    it("calls onStop callbacks when stopped", () => {
+      const stopSpy = vi.fn();
+      simulator.onStop(stopSpy);
+
+      simulator.start();
+      simulator.stop();
+      expect(stopSpy).toHaveBeenCalledOnce();
+    });
+
+    it("does not call onStop if not running", () => {
+      const stopSpy = vi.fn();
+      simulator.onStop(stopSpy);
+
+      simulator.stop();
+      expect(stopSpy).not.toHaveBeenCalled();
+    });
+
+    it("calls onPause callbacks when paused", () => {
+      const pauseSpy = vi.fn();
+      simulator.onPause(pauseSpy);
+
+      simulator.start();
+      simulator.pause();
+      expect(pauseSpy).toHaveBeenCalledOnce();
+
+      simulator.stop();
+    });
+
+    it("does not call onPause if already paused", () => {
+      const pauseSpy = vi.fn();
+      simulator.onPause(pauseSpy);
+
+      simulator.start();
+      simulator.pause();
+      simulator.pause(); // no-op
+      expect(pauseSpy).toHaveBeenCalledOnce();
+
+      simulator.stop();
+    });
+
+    it("calls onResume callbacks when resumed", () => {
+      const resumeSpy = vi.fn();
+      simulator.onResume(resumeSpy);
+
+      simulator.start();
+      simulator.pause();
+      simulator.resume();
+      expect(resumeSpy).toHaveBeenCalledOnce();
+
+      simulator.stop();
+    });
+
+    it("does not call onResume if not paused", () => {
+      const resumeSpy = vi.fn();
+      simulator.onResume(resumeSpy);
+
+      simulator.start();
+      simulator.resume(); // no-op, not paused
+      expect(resumeSpy).not.toHaveBeenCalled();
+
+      simulator.stop();
+    });
+
+    it("continues running even if a lifecycle callback throws", () => {
+      const logRecords: Array<{ level: LogLevel; message: string; context?: Record<string, unknown> }> = [];
+      const capturingDriver: LogDriver = {
+        log(level, message, context) {
+          logRecords.push({ level, message, context });
+        },
+      };
+      logger.setDriver(capturingDriver);
+
+      const stopSpy = vi.fn();
+      simulator.onStart(() => {
+        throw new Error("Start boom!");
+      });
+      simulator.onStop(stopSpy);
+
+      simulator.start();
+      simulator.stop();
+
+      expect(logRecords.some((r) => r.context?.hook === "onStart")).toBe(true);
+      expect(stopSpy).toHaveBeenCalledOnce();
+
+      logger.setDriver(new NoopDriver());
     });
   });
 

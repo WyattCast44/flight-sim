@@ -12,8 +12,13 @@ export class Simulator {
   /** Fixed physics timestep (e.g. 1/240 seconds) */
   public readonly fixedTimeStep: number;
 
-  private readonly onBeforeStep: Array<(dt: number) => void> = [];
-  private readonly onAfterStep: Array<(dt: number) => void> = [];
+  private readonly beforeTickCallbacks: Array<(dt: number) => void> = [];
+  private readonly afterTickCallbacks: Array<(dt: number) => void> = [];
+  private readonly frameCallbacks: Array<(alpha: number) => void> = [];
+  private readonly startCallbacks: Array<() => void> = [];
+  private readonly stopCallbacks: Array<() => void> = [];
+  private readonly pauseCallbacks: Array<() => void> = [];
+  private readonly resumeCallbacks: Array<() => void> = [];
 
   constructor(options: { tickRate?: number } = {}) {
     this.fixedTimeStep = 1 / (options.tickRate ?? 240); // 240 Hz recommended for 6DOF
@@ -29,12 +34,15 @@ export class Simulator {
     this._isPaused = false;
     this.lastWallTime = performance.now();
     this.accumulator = 0;
+    this.executeCallbacks(this.startCallbacks, "onStart");
     this.requestNextFrame();
   }
 
   /** Freeze time advancement, but keep the RAF loop alive */
   public pause(): void {
+    if (!this._isRunning || this._isPaused) return;
     this._isPaused = true;
+    this.executeCallbacks(this.pauseCallbacks, "onPause");
   }
 
   /** Resume time advancement */
@@ -42,13 +50,16 @@ export class Simulator {
     if (!this._isRunning || !this._isPaused) return;
     this._isPaused = false;
     this.lastWallTime = performance.now(); // prevent large jump
+    this.executeCallbacks(this.resumeCallbacks, "onResume");
     this.requestNextFrame();
   }
 
   /** Completely stop the simulator */
   public stop(): void {
+    if (!this._isRunning) return;
     this._isRunning = false;
     this._isPaused = true;
+    this.executeCallbacks(this.stopCallbacks, "onStop");
   }
 
   public isRunning(): boolean {
@@ -81,19 +92,48 @@ export class Simulator {
   // ─────────────────────────────────────────────────────────────
 
   /**
-   * Register a callback that runs **before** each fixed physics step.
+   * Register a callback that runs **before** each fixed tick.
    * Good for reading input, updating controls, etc.
    */
-  public onBeforePhysicsStep(callback: (dt: number) => void): void {
-    this.onBeforeStep.push(callback);
+  public onBeforeTick(callback: (dt: number) => void): void {
+    this.beforeTickCallbacks.push(callback);
   }
 
   /**
-   * Register a callback that runs **after** each fixed physics step.
+   * Register a callback that runs **after** each fixed tick.
    * Good for World.step(), state emission, etc.
    */
-  public onAfterPhysicsStep(callback: (dt: number) => void): void {
-    this.onAfterStep.push(callback);
+  public onAfterTick(callback: (dt: number) => void): void {
+    this.afterTickCallbacks.push(callback);
+  }
+
+  /**
+   * Register a callback that runs **once per frame**, after all fixed ticks.
+   * Receives `alpha` (0–1), the interpolation factor between the last two ticks.
+   * Good for rendering interpolation.
+   */
+  public onFrame(callback: (alpha: number) => void): void {
+    this.frameCallbacks.push(callback);
+  }
+
+  /** Register a callback that runs when the simulator starts. */
+  public onStart(callback: () => void): void {
+    this.startCallbacks.push(callback);
+  }
+
+  /** Register a callback that runs when the simulator stops. */
+  public onStop(callback: () => void): void {
+    this.stopCallbacks.push(callback);
+  }
+
+  /** Register a callback that runs when the simulator pauses. */
+  public onPause(callback: () => void): void {
+    this.pauseCallbacks.push(callback);
+  }
+
+  /** Register a callback that runs when the simulator resumes. */
+  public onResume(callback: () => void): void {
+    this.resumeCallbacks.push(callback);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -117,31 +157,54 @@ export class Simulator {
       this.accumulator += dt;
 
       while (this.accumulator >= this.fixedTimeStep) {
-        this.executeBeforeStep(this.fixedTimeStep);
-        this.executeAfterStep(this.fixedTimeStep);
+        this.executeBeforeTick(this.fixedTimeStep);
+        this.executeAfterTick(this.fixedTimeStep);
         this.accumulator -= this.fixedTimeStep;
       }
+
+      const alpha = this.accumulator / this.fixedTimeStep;
+      this.executeFrame(alpha);
     }
 
     this.requestNextFrame();
   };
 
-  private executeBeforeStep(dt: number): void {
-    for (const callback of this.onBeforeStep) {
+  private executeBeforeTick(dt: number): void {
+    for (const callback of this.beforeTickCallbacks) {
       try {
         callback(dt);
       } catch (error) {
-        logger.error("Error in physics step callback", { hook: "onBeforePhysicsStep", error });
+        logger.error("Error in tick callback", { hook: "onBeforeTick", error });
       }
     }
   }
 
-  private executeAfterStep(dt: number): void {
-    for (const callback of this.onAfterStep) {
+  private executeAfterTick(dt: number): void {
+    for (const callback of this.afterTickCallbacks) {
       try {
         callback(dt);
       } catch (error) {
-        logger.error("Error in physics step callback", { hook: "onAfterPhysicsStep", error });
+        logger.error("Error in tick callback", { hook: "onAfterTick", error });
+      }
+    }
+  }
+
+  private executeFrame(alpha: number): void {
+    for (const callback of this.frameCallbacks) {
+      try {
+        callback(alpha);
+      } catch (error) {
+        logger.error("Error in frame callback", { hook: "onFrame", error });
+      }
+    }
+  }
+
+  private executeCallbacks(callbacks: Array<() => void>, hook: string): void {
+    for (const callback of callbacks) {
+      try {
+        callback();
+      } catch (error) {
+        logger.error("Error in lifecycle callback", { hook, error });
       }
     }
   }

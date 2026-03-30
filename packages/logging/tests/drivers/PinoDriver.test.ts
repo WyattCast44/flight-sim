@@ -34,14 +34,14 @@ describe("PinoDriver", () => {
   it("includes context fields in the JSON output", () => {
     const { driver, lines } = createCapturingDriver();
 
-    driver.log("error", "failed", { hook: "onBeforePhysicsStep", code: 42 });
+    driver.log("error", "failed", { hook: "onBeforeTick", code: 42 });
 
     const output = lines();
     expect(output).toHaveLength(1);
     expect(output[0]).toMatchObject({
       level: 50,
       msg: "failed",
-      hook: "onBeforePhysicsStep",
+      hook: "onBeforeTick",
       code: 42,
     });
   });

@@ -33,7 +33,7 @@ function normalizeContext(
  * import { logger } from "@flight-sim/logging";
  *
  * logger.info("Simulation started");
- * logger.error("Callback failed", { hook: "onBeforePhysicsStep", error });
+ * logger.error("Callback failed", { hook: "onBeforeTick", error });
  *
  * // In tests:
  * import { Logger, NoopDriver } from "@flight-sim/logging";
