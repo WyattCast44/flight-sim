@@ -6,23 +6,27 @@ import { Meters } from "@flight-sim/units";
 import { Vector3 } from "@flight-sim/math";
 import { RadiansPerSecond } from "@flight-sim/units"
 
-let v = new Vector3(new Feet(1), new Feet(2), new Feet(3));
+// let v = new Vector3(new Feet(1), new Feet(2), new Feet(3));
 
-console.log(v, v.toReadableObject(), v.toString());
+// console.log(v, v.toReadableObject(), v.toString());
 
-let v2 = v.convertToBaseUnits();
+// let v2 = v.convertToBaseUnits();
 
-console.log(v2, v2.toReadableObject(), v2.toString());
+// console.log(v2, v2.toReadableObject(), v2.toString());
 
-let v3 = Vector3.createZero(RadiansPerSecond);
+// let v3 = Vector3.createZero(RadiansPerSecond);
 
-console.log(v3, v3.toReadableObject(), v3.toString());
+// console.log(v3, v3.toReadableObject(), v3.toString());
 
-let v4 = Vector3.createPositionInMeters(1, 2, 3);
-console.log(v4, v4.toReadableObject(), v4.toString());
+// let v4 = Vector3.createPositionInMeters(1, 2, 3);
+// console.log(v4, v4.toReadableObject(), v4.toString());
 
-let v5 = Vector3.createPositionInMeters(new Meters(1), new Meters(2), new Meters(3));
-console.log(v5, v5.toReadableObject(), v5.toString());
+// let v5 = Vector3.createPositionInMeters(new Meters(1), new Meters(2), new Meters(3));
+// console.log(v5, v5.toReadableObject(), v5.toString());
+
+let f1 = new Feet(1);
+let f2 = f1.add(new Feet(1));
+console.log(f2, "F2");
 
 // const simulator = new Simulator({ tickRate: 60 });
 
