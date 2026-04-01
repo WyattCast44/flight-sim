@@ -1,5 +1,6 @@
 import { assertNonNegative } from "../../core/validate.js";
 import { Mass } from "../../categories/Mass.js";
+import type { Unit } from "../../categories/Unit.js";
 import { KILOGRAMS_PER_POUND_MASS, KILOGRAMS_PER_SLUG } from "./constants.js";
 import { Kilograms } from "./Kilograms.js";
 import { Slugs } from "./Slugs.js";
@@ -20,6 +21,11 @@ export class PoundsMass extends Mass {
 
   static fromSlugs(value: number): PoundsMass {
     return new PoundsMass((value * KILOGRAMS_PER_SLUG) / KILOGRAMS_PER_POUND_MASS);
+  }
+
+  static fromSIValue(value: number | Unit): PoundsMass {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return PoundsMass.fromKilograms(si);
   }
 
   toKilograms(): Kilograms {

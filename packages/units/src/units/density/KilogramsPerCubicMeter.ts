@@ -1,5 +1,6 @@
 import { assertNonNegative } from "../../core/validate.js";
 import { Density } from "../../categories/Density.js";
+import type { Unit } from "../../categories/Unit.js";
 import { KILOGRAMS_PER_CUBIC_METER_PER_SLUG_PER_CUBIC_FOOT } from "./constants.js";
 import { SlugsPerCubicFoot } from "./SlugsPerCubicFoot.js";
 
@@ -15,6 +16,11 @@ export class KilogramsPerCubicMeter extends Density {
 
   static fromSlugsPerCubicFoot(value: number): KilogramsPerCubicMeter {
     return new KilogramsPerCubicMeter(value * KILOGRAMS_PER_CUBIC_METER_PER_SLUG_PER_CUBIC_FOOT);
+  }
+
+  static fromSIValue(value: number | Unit): KilogramsPerCubicMeter {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return KilogramsPerCubicMeter.fromKilogramsPerCubicMeter(si);
   }
 
   toKilogramsPerCubicMeter(): KilogramsPerCubicMeter {

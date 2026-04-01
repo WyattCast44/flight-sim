@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Length } from "../../categories/Length.js";
+import type { Unit } from "../../categories/Unit.js";
 import { Feet } from "./Feet.js";
 import { Kilometers } from "./Kilometers.js";
 import { Meters } from "./Meters.js";
@@ -38,6 +39,11 @@ export class Inches extends Length {
 
   static fromKilometers(value: number): Inches {
     return new Inches((value * METERS_PER_KILOMETER) / METERS_PER_INCH);
+  }
+
+  static fromSIValue(value: number | Unit): Inches {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Inches.fromMeters(si);
   }
 
   toFeet(): Feet {

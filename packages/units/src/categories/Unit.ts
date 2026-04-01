@@ -1,3 +1,5 @@
+import { UnitValueError } from "../core/validate.js";
+
 /**
  * Abstract base class for all units.
  */
@@ -38,23 +40,23 @@ export abstract class Unit {
   abstract toSIUnits(): Unit;
 
   /**
-   * Get an instance of the unit from the SI unit value.
-   * 
-   * For example, if this unit is Feet, this method
-   * would accept a value in meters and return an instance of Feet.
-   * 
-   * If you pass an instance of a unit, the value will be extracted from the instance.
-   * 
-   * @param value - The value in the SI unit for the category of this unit.
-   * @returns An instance of the unit from the SI unit value.
+   * Build an instance from the SI scalar for this unit’s category, or from any unit
+   * (via `value.toSIUnits().value`). Each **concrete** class must override this static;
+   * the default implementation throws so missing implementations fail at runtime.
+   *
+   * @param value - SI numeric value for the category, or a `Unit` to read SI from.
+   * @returns A new instance of the concrete unit type.
+   * @throws UnitValueError when called on `Unit` itself or on a class that did not override.
    * @example
    * ```typescript
-   * const feet = Feet.fromSIUnits(3.048|new Meters(3.048));
-   * console.log(feet); // 1 ft
+   * const feet = Feet.fromSIValue(3.048);
+   * const alsoFeet = Feet.fromSIValue(new Meters(3.048));
    * ```
    */
-  static fromSIValue(value: number|Unit): Unit {
-    throw new Error("Not implemented");
+  static fromSIValue(value: number | Unit): Unit {
+    throw new UnitValueError(
+      "Each concrete unit class must implement static fromSIValue(value: number | Unit).",
+    );
   }
 
   /**
@@ -68,9 +70,6 @@ export abstract class Unit {
     const thisBase = this.toSIUnits();
     const otherBase = other.toSIUnits();
 
-    console.log(thisBase, otherBase);
-
-    // Safety check: ensure they belong to the same physical dimension
     if (thisBase.constructor !== otherBase.constructor) {
       throw new Error(
         `Cannot add incompatible units: ${this.getStringUnits()} + ${other.getStringUnits()}. ` +
@@ -78,14 +77,11 @@ export abstract class Unit {
       );
     }
 
-    // for example, if we were adding feet to to feet, 
-    // we would now have two values in meters - and we 
-    // add them together to get the result value in meters.
     const resultValue = thisBase.value + otherBase.value;
-
-    // then we would need to convert the result value back to the original unit type
-    const result = Unit.fromSIValue(resultValue);
-
-    return result.toSIUnits() as unknown as T;
+    const ctor = this.constructor as typeof Unit & {
+      fromSIValue(v: number | Unit): Unit;
+    };
+    const result = ctor.fromSIValue(resultValue);
+    return result as T;
   }
 }

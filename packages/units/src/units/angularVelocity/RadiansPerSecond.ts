@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { AngularVelocity } from "../../categories/AngularVelocity.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   RADIANS_PER_DEGREE,
   RADIANS_PER_REVOLUTION_PER_MINUTE,
@@ -23,6 +24,11 @@ export class RadiansPerSecond extends AngularVelocity {
 
   static fromRevolutionsPerMinute(value: number): RadiansPerSecond {
     return new RadiansPerSecond(value * RADIANS_PER_REVOLUTION_PER_MINUTE);
+  }
+
+  static fromSIValue(value: number | Unit): RadiansPerSecond {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return RadiansPerSecond.fromRadiansPerSecond(si);
   }
 
   toRadiansPerSecond(): RadiansPerSecond {

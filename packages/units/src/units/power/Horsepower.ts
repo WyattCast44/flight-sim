@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Power } from "../../categories/Power.js";
+import type { Unit } from "../../categories/Unit.js";
 import { WATTS_PER_HORSEPOWER } from "./constants.js";
 import { Watts } from "./Watts.js";
 
@@ -15,6 +16,11 @@ export class Horsepower extends Power {
 
   static fromWatts(value: number): Horsepower {
     return new Horsepower(value / WATTS_PER_HORSEPOWER);
+  }
+
+  static fromSIValue(value: number | Unit): Horsepower {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Horsepower.fromWatts(si);
   }
 
   toWatts(): Watts {

@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Altitude } from "../../categories/Altitude.js";
+import type { Unit } from "../../categories/Unit.js";
 import { AboveGroundLevel } from "./AboveGroundLevel.js";
 import { Feet } from "../length/Feet.js";
 import { Inches } from "../length/Inches.js";
@@ -34,6 +35,11 @@ export class MeanSeaLevel extends Altitude {
 
   static fromKilometers(value: number): MeanSeaLevel {
     return new MeanSeaLevel(Meters.fromKilometers(value).value);
+  }
+
+  static fromSIValue(value: number | Unit): MeanSeaLevel {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return MeanSeaLevel.fromMeters(si);
   }
 
   toMeanSeaLevel(): MeanSeaLevel {

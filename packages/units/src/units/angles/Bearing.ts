@@ -1,6 +1,7 @@
 import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Angles } from "../../categories/Angles.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   bearingClockwiseDegreesToRadians,
   mathRadiansToDegrees,
@@ -34,6 +35,11 @@ export class Bearing extends Angles {
 
   static fromDegreesCardinal(value: number): Bearing {
     return new DegreesCardinal(value).toBearing();
+  }
+
+  static fromSIValue(value: number | Unit): Bearing {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Bearing.fromRadians(si);
   }
 
   toRadians(): Radians {

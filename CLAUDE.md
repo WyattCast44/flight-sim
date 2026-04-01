@@ -41,6 +41,8 @@ Each physical quantity follows **Abstract Category → Concrete Units**:
 
 **All internal physics use SI bases** (Meters, Kilograms, Radians, Pascals, Kelvin, etc.). Conversions always return new instances (immutable). Constructors validate inputs and throw `UnitValueError` for NaN/Infinity/domain violations.
 
+Each **concrete** unit class must implement **`static fromSIValue(value: number | Unit)`**, which builds an instance from the category’s SI scalar or from any unit (via `toSIUnits().value`). The base `Unit.fromSIValue` throws `UnitValueError` so a missing implementation is caught when the method is called.
+
 **Angles are special:** `Degrees`/`Radians` are mathematical (CCW, unbounded), `DegreesCardinal` is 1–360° clockwise from north (auto-normalized), `Bearing` is clockwise from north and unbounded.
 
 ### Simulator Package

@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Pressure } from "../../categories/Pressure.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   PASCALS_PER_HECTOPASCAL,
   PASCALS_PER_PSF,
@@ -37,6 +38,11 @@ export class Hectopascals extends Pressure {
 
   static fromPoundsPerSquareFoot(value: number): Hectopascals {
     return new Hectopascals((value * PASCALS_PER_PSF) / PASCALS_PER_HECTOPASCAL);
+  }
+
+  static fromSIValue(value: number | Unit): Hectopascals {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Hectopascals.fromPascals(si);
   }
 
   toPascals(): Pascals {

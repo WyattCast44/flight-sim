@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Velocity } from "../../categories/Velocity.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   METERS_PER_SECOND_PER_FOOT_PER_SECOND,
   METERS_PER_SECOND_PER_FPM,
@@ -49,6 +50,11 @@ export class FeetPerSecond extends Velocity {
     return new FeetPerSecond(
       (value * METERS_PER_SECOND_PER_FPM) / METERS_PER_SECOND_PER_FOOT_PER_SECOND,
     );
+  }
+
+  static fromSIValue(value: number | Unit): FeetPerSecond {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return FeetPerSecond.fromMetersPerSecond(si);
   }
 
   toMetersPerSecond(): MetersPerSecond {

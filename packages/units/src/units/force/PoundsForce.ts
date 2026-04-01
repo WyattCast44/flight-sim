@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Force } from "../../categories/Force.js";
+import type { Unit } from "../../categories/Unit.js";
 import { NEWTONS_PER_POUND_FORCE } from "./constants.js";
 import { Newtons } from "./Newtons.js";
 
@@ -15,6 +16,11 @@ export class PoundsForce extends Force {
 
   static fromNewtons(value: number): PoundsForce {
     return new PoundsForce(value / NEWTONS_PER_POUND_FORCE);
+  }
+
+  static fromSIValue(value: number | Unit): PoundsForce {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return PoundsForce.fromNewtons(si);
   }
 
   toNewtons(): Newtons {

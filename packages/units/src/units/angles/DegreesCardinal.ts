@@ -1,6 +1,7 @@
 import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Angles } from "../../categories/Angles.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   cardinalDegreesToRadians,
   normalizeCardinal1to360,
@@ -36,6 +37,11 @@ export class DegreesCardinal extends Angles {
 
   static fromBearing(value: number): DegreesCardinal {
     return new DegreesCardinal(value);
+  }
+
+  static fromSIValue(value: number | Unit): DegreesCardinal {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return DegreesCardinal.fromRadians(si);
   }
 
   toRadians(): Radians {

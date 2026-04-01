@@ -1,5 +1,6 @@
 import { assertNonNegative } from "../../core/validate.js";
 import { MomentOfInertia } from "../../categories/MomentOfInertia.js";
+import type { Unit } from "../../categories/Unit.js";
 import { KILOGRAM_METER_SQUARED_PER_SLUG_FOOT_SQUARED } from "./constants.js";
 import { SlugFootSquared } from "./SlugFootSquared.js";
 
@@ -15,6 +16,11 @@ export class KilogramMeterSquared extends MomentOfInertia {
 
   static fromSlugFootSquared(value: number): KilogramMeterSquared {
     return new KilogramMeterSquared(value * KILOGRAM_METER_SQUARED_PER_SLUG_FOOT_SQUARED);
+  }
+
+  static fromSIValue(value: number | Unit): KilogramMeterSquared {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return KilogramMeterSquared.fromKilogramMeterSquared(si);
   }
 
   toKilogramMeterSquared(): KilogramMeterSquared {

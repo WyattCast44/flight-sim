@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Volume } from "../../categories/Volume.js";
+import type { Unit } from "../../categories/Unit.js";
 import {
   CUBIC_METERS_PER_CUBIC_FOOT,
   CUBIC_METERS_PER_US_GALLON,
@@ -32,6 +33,11 @@ export class CubicFeet extends Volume {
 
   static fromUSGallons(value: number): CubicFeet {
     return new CubicFeet((value * CUBIC_METERS_PER_US_GALLON) / CUBIC_METERS_PER_CUBIC_FOOT);
+  }
+
+  static fromSIValue(value: number | Unit): CubicFeet {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return CubicFeet.fromCubicMeters(si);
   }
 
   toLiters(): Liters {

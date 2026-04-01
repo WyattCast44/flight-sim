@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Temperature } from "../../categories/Temperature.js";
+import type { Unit } from "../../categories/Unit.js";
 import { CELSIUS_OFFSET_KELVIN, FAHRENHEIT_OFFSET_TO_RANKINE } from "./constants.js";
 import { Fahrenheit } from "./Fahrenheit.js";
 import { Kelvin } from "./Kelvin.js";
@@ -20,6 +21,11 @@ export class Celsius extends Temperature {
 
   static fromFahrenheit(value: number): Celsius {
     return new Celsius(((value + FAHRENHEIT_OFFSET_TO_RANKINE) * 5) / 9 - CELSIUS_OFFSET_KELVIN);
+  }
+
+  static fromSIValue(value: number | Unit): Celsius {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Celsius.fromKelvin(si);
   }
 
   toKelvin(): Kelvin {

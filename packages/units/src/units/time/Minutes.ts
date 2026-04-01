@@ -1,5 +1,6 @@
 import { assertNonNegative } from "../../core/validate.js";
 import { Time } from "../../categories/Time.js";
+import type { Unit } from "../../categories/Unit.js";
 import { SECONDS_PER_MINUTE } from "./constants.js";
 import { Hours } from "./Hours.js";
 import { Seconds } from "./Seconds.js";
@@ -25,6 +26,11 @@ export class Minutes extends Time {
 
   static fromHours(value: number): Minutes {
     return new Minutes(value * 60);
+  }
+
+  static fromSIValue(value: number | Unit): Minutes {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return Minutes.fromSeconds(si);
   }
 
   toMilliseconds(): Milliseconds {

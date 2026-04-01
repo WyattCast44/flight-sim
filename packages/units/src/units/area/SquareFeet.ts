@@ -1,5 +1,6 @@
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Area } from "../../categories/Area.js";
+import type { Unit } from "../../categories/Unit.js";
 import { SQUARE_METERS_PER_SQUARE_FOOT } from "./constants.js";
 import { SquareMeters } from "./SquareMeters.js";
 
@@ -18,6 +19,11 @@ export class SquareFeet extends Area {
 
   static fromSquareMeters(value: number): SquareFeet {
     return new SquareFeet(value / SQUARE_METERS_PER_SQUARE_FOOT);
+  }
+
+  static fromSIValue(value: number | Unit): SquareFeet {
+    const si = typeof value === "number" ? value : value.toSIUnits().value;
+    return SquareFeet.fromSquareMeters(si);
   }
 
   toSquareFeet(): SquareFeet {
