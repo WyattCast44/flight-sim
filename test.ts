@@ -1,10 +1,11 @@
 
 import { logger } from "@flight-sim/logging";
 import { Simulator } from "@flight-sim/simulator";
-import { Feet, Seconds } from "@flight-sim/units";
+import { Feet, Inches, Newtons, Seconds } from "@flight-sim/units";
 import { Meters } from "@flight-sim/units";
 import { Vector3 } from "@flight-sim/math";
 import { RadiansPerSecond } from "@flight-sim/units"
+import { round } from "@flight-sim/math";
 
 // let v = new Vector3(new Feet(1), new Feet(2), new Feet(3));
 
@@ -25,8 +26,23 @@ import { RadiansPerSecond } from "@flight-sim/units"
 // console.log(v5, v5.toReadableObject(), v5.toString());
 
 let f1 = new Feet(1);
-let f2 = f1.add(new Feet(1));
-console.log(f2, "F2");
+let i1 = new Inches(12);        // 12 inches = 1 foot
+
+let f2 = f1.add(i1);            // returns Feet
+console.assert(round(f2.value) === 2, `F2 should be 2. Actual: ${f2.value}`);
+
+let f3 = f1.subtract(i1);
+console.assert(round(f3.value) === 0, `F3 should be 0. Actual: ${f3.value}`);
+
+let f4 = f1.multiplyByScalar(2);
+console.assert(round(f4.value) === 2, `F4 should be 2. Actual: ${f4.value}`);
+
+let f5 = f1.divideByScalar(2);
+console.assert(round(f5.value) === 0.5, `F5 should be 0.5. Actual: ${f5.value}`);
+
+let i2 = i1.add(new Inches(1));
+let f6 = f1.min(i2);
+console.assert(round(f6.value) === 1, `F6 should be 1. Actual: ${f6.value}`);
 
 // const simulator = new Simulator({ tickRate: 60 });
 

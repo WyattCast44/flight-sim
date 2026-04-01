@@ -1,5 +1,4 @@
 import { UnitValueError } from "../core/validate.js";
-
 /**
  * Abstract base class for all units.
  */
@@ -60,11 +59,7 @@ export abstract class Unit {
   }
 
   /**
-   * Adds another unit of the **same physical category**.
-   *
-   * Example: Meters + Feet works. Meters + Newtons will throw.
-   *
-   * @throws Error if the units are from different physical categories.
+   * Adds another unit of the same physical category.
    */
   public add<T extends Unit>(other: T): T {
     const thisBase = this.toSIUnits();
@@ -72,16 +67,143 @@ export abstract class Unit {
 
     if (thisBase.constructor !== otherBase.constructor) {
       throw new Error(
-        `Cannot add incompatible units: ${this.getStringUnits()} + ${other.getStringUnits()}. ` +
-          `Both must belong to the same physical category.`,
+        `Cannot add incompatible units: ${this.getStringUnits()} + ${other.getStringUnits()}.`,
       );
     }
 
-    const resultValue = thisBase.value + otherBase.value;
-    const ctor = this.constructor as typeof Unit & {
-      fromSIValue(v: number | Unit): Unit;
-    };
-    const result = ctor.fromSIValue(resultValue);
-    return result as T;
+    const resultValueInSI = thisBase.value + otherBase.value;
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as T;
+  }
+
+  /**
+   * Subtracts another unit of the same physical category.
+   */
+  public subtract<T extends Unit>(other: T): T {
+    const thisBase = this.toSIUnits();
+    const otherBase = other.toSIUnits();
+
+    if (thisBase.constructor !== otherBase.constructor) {
+      throw new Error(
+        `Cannot subtract incompatible units: ${this.getStringUnits()} - ${other.getStringUnits()}.`,
+      );
+    }
+
+    const resultValueInSI = thisBase.value - otherBase.value;
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as T;
+  }
+
+  /**
+   * Multiplies this unit by a dimensionless scalar.
+   * This is now correct.
+   */
+  public multiplyByScalar(scalar: number): this {
+    if (!isFinite(scalar)) {
+      throw new UnitValueError(
+        `Cannot multiply unit by non-finite scalar: ${scalar}`,
+      );
+    }
+
+    const thisInSI = this.toSIUnits();
+    const resultValueInSI = thisInSI.value * scalar;
+
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as this;
+  }
+
+  /**
+   * Divides this unit by a dimensionless scalar.
+   */
+  public divideByScalar(scalar: number): this {
+    if (!isFinite(scalar) || scalar === 0) {
+      throw new UnitValueError(
+        `Cannot divide unit by invalid scalar: ${scalar}`,
+      );
+    }
+
+    const thisInSI = this.toSIUnits();
+    const resultValueInSI = thisInSI.value / scalar;
+
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as this;
+  }
+
+  /**
+   * Returns a new unit with the negated value (multiplies by -1).
+   */
+  public negate(): this {
+    return this.multiplyByScalar(-1);
+  }
+
+  /**
+   * Returns whether this unit has a value of exactly zero.
+   */
+  public isZero(tolerance: number = 1e-6): boolean {
+    return Math.abs(this.value) <= tolerance;
+  }
+
+  /**
+   * Returns whether this unit is approximately equal to another unit
+   * within a given tolerance (default: 1e-6).
+   *
+   * Always compares in SI base units for accuracy.
+   */
+  public equals(other: Unit | number, tolerance: number = 1e-6): boolean {
+    if (typeof other === "number") {
+      return Math.abs(this.value - other) <= tolerance;
+    }
+
+    if (
+      this.constructor !== other.constructor &&
+      this.toSIUnits().constructor !== other.toSIUnits().constructor
+    ) {
+      return false; // different physical categories
+    }
+
+    const thisBase = this.toSIUnits();
+    const otherBase = other.toSIUnits();
+
+    return Math.abs(thisBase.value - otherBase.value) <= tolerance;
+  }
+
+  /**
+   * Returns the absolute value of this unit.
+   *
+   * @param precision - The number of decimal places to round the value to. Defaults to 2.
+   * @returns The absolute value of this unit.
+   */
+  public absoluteValue(precision: number = 2): number {
+    return Math.round(Math.abs(this.value) * Math.pow(10, precision)) / Math.pow(10, precision);
+  }
+
+  public min(other: Unit): this {
+    const thisBase = this.toSIUnits();
+    const otherBase = other.toSIUnits();
+
+    if (thisBase.constructor !== otherBase.constructor) {
+      throw new Error(
+        `Cannot compare min of incompatible units: ${this.getStringUnits()} and ${other.getStringUnits()}`,
+      );
+    }
+
+    const resultValueInSI = Math.min(thisBase.value, otherBase.value);
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as this;
+  }
+
+  public max(other: Unit): this {
+    const thisBase = this.toSIUnits();
+    const otherBase = other.toSIUnits();
+
+    if (thisBase.constructor !== otherBase.constructor) {
+      throw new Error(
+        `Cannot compare max of incompatible units: ${this.getStringUnits()} and ${other.getStringUnits()}`,
+      );
+    }
+
+    const resultValueInSI = Math.max(thisBase.value, otherBase.value);
+    const ctor = this.constructor as typeof Unit;
+    return ctor.fromSIValue(resultValueInSI) as this;
   }
 }

@@ -5,3 +5,7 @@ export function degToRad(degrees: number): number {
 export function radToDeg(radians: number): number {
     return radians * 180 / Math.PI;
 }
+
+export function round(value: number, precision: number = 2): number {
+    return Math.round(value * Math.pow(10, precision)) / Math.pow(10, precision);
+}
