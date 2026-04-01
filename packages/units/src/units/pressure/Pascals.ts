@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Pressure } from "../../categories/Pressure.js";
 import {
@@ -52,11 +51,11 @@ export class Pascals extends Pressure {
     return new PoundsPerSquareFoot(this.value / PASCALS_PER_PSF);
   }
 
-  getStringUnits(): string {
-    return "Pa";
+  toSIUnits(): Pascals {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} Pa`;
+  getStringUnits(): string {
+    return "Pa";
   }
 }

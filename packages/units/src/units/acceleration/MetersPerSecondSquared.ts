@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Acceleration } from "../../categories/Acceleration.js";
 import { METERS_PER_FOOT } from "./constants.js";
@@ -26,11 +25,11 @@ export class MetersPerSecondSquared extends Acceleration {
     return new FeetPerSecondSquared(this.value / METERS_PER_FOOT);
   }
 
-  getStringUnits(): string {
-    return "m/s²";
+  toSIUnits(): MetersPerSecondSquared {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} m/s²`;
+  getStringUnits(): string {
+    return "m/s²";
   }
 }

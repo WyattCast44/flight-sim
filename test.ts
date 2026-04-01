@@ -31,3 +31,4 @@ setTimeout(() => {
 }, duration);
 
 simulator.start();
+

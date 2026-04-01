@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Length } from "../../categories/Length.js";
 import { Feet } from "./Feet.js";
@@ -61,11 +60,11 @@ export class Meters extends Length {
     return new Inches(this.value / METERS_PER_INCH);
   }
 
-  getStringUnits(): string {
-    return "m";
+  toSIUnits(): Meters {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} m`;
+  getStringUnits(): string {
+    return "m";
   }
 }

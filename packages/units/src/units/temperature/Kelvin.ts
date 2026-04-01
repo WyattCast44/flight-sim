@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Temperature } from "../../categories/Temperature.js";
 import { CELSIUS_OFFSET_KELVIN, FAHRENHEIT_OFFSET_TO_RANKINE } from "./constants.js";
@@ -35,11 +34,11 @@ export class Kelvin extends Temperature {
     return new Fahrenheit((this.value * 9) / 5 - FAHRENHEIT_OFFSET_TO_RANKINE);
   }
 
-  getStringUnits(): string {
-    return "K";
+  toSIUnits(): Kelvin {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} K`;
+  getStringUnits(): string {
+    return "K";
   }
 }

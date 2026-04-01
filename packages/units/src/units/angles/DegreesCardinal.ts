@@ -54,6 +54,10 @@ export class DegreesCardinal extends Angles {
     return new Bearing(this.value);
   }
 
+  toSIUnits(): Radians {
+    return this.toRadians();
+  }
+
   getStringUnits(): string {
     return "°";
   }

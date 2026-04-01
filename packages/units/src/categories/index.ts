@@ -1,3 +1,4 @@
+export { Unit } from "./Unit.js";
 export { Acceleration } from "./Acceleration.js";
 export { Altitude } from "./Altitude.js";
 export { Angles } from "./Angles.js";

@@ -54,6 +54,10 @@ export class Degrees extends Angles {
     return this.toRadians().toBearing();
   }
 
+  toSIUnits(): Radians {
+    return this.toRadians();
+  }
+
   getStringUnits(): string {
     return "°";
   }

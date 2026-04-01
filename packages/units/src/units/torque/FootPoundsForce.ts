@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Torque } from "../../categories/Torque.js";
 import { NEWTON_METERS_PER_FOOT_POUND_FORCE } from "./constants.js";
@@ -26,11 +25,11 @@ export class FootPoundsForce extends Torque {
     return this;
   }
 
-  getStringUnits(): string {
-    return "ft·lbf";
+  toSIUnits(): NewtonMeters {
+    return this.toNewtonMeters();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} ft·lbf`;
+  getStringUnits(): string {
+    return "ft·lbf";
   }
 }

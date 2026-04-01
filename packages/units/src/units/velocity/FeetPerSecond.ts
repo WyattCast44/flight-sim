@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Velocity } from "../../categories/Velocity.js";
 import {
@@ -76,11 +75,11 @@ export class FeetPerSecond extends Velocity {
     return this.toMetersPerSecond().toFeetPerMinute();
   }
 
-  getStringUnits(): string {
-    return "ft/s";
+  toSIUnits(): MetersPerSecond {
+    return this.toMetersPerSecond();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} ft/s`;
+  getStringUnits(): string {
+    return "ft/s";
   }
 }

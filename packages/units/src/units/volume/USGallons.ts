@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Volume } from "../../categories/Volume.js";
 import {
@@ -51,11 +50,11 @@ export class USGallons extends Volume {
     return this.toCubicMeters().toCubicFeet();
   }
 
-  getStringUnits(): string {
-    return "US gal";
+  toSIUnits(): CubicMeters {
+    return this.toCubicMeters();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} US gal`;
+  getStringUnits(): string {
+    return "US gal";
   }
 }

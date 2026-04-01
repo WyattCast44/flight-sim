@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertNonNegative } from "../../core/validate.js";
 import { Density } from "../../categories/Density.js";
 import { KILOGRAMS_PER_CUBIC_METER_PER_SLUG_PER_CUBIC_FOOT } from "./constants.js";
@@ -26,11 +25,11 @@ export class SlugsPerCubicFoot extends Density {
     return this;
   }
 
-  getStringUnits(): string {
-    return "slug/ft³";
+  toSIUnits(): KilogramsPerCubicMeter {
+    return this.toKilogramsPerCubicMeter();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} slug/ft³`;
+  getStringUnits(): string {
+    return "slug/ft³";
   }
 }

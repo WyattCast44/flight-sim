@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Temperature } from "../../categories/Temperature.js";
 import { CELSIUS_OFFSET_KELVIN, FAHRENHEIT_OFFSET_TO_RANKINE } from "./constants.js";
@@ -35,11 +34,11 @@ export class Celsius extends Temperature {
     return this.toKelvin().toFahrenheit();
   }
 
-  getStringUnits(): string {
-    return "°C";
+  toSIUnits(): Kelvin {
+    return this.toKelvin();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} °C`;
+  getStringUnits(): string {
+    return "°C";
   }
 }

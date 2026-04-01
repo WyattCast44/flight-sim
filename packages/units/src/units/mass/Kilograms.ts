@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertNonNegative } from "../../core/validate.js";
 import { Mass } from "../../categories/Mass.js";
 import { KILOGRAMS_PER_POUND_MASS, KILOGRAMS_PER_SLUG } from "./constants.js";
@@ -35,11 +34,11 @@ export class Kilograms extends Mass {
     return new Slugs(this.value / KILOGRAMS_PER_SLUG);
   }
 
-  getStringUnits(): string {
-    return "kg";
+  toSIUnits(): Kilograms {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} kg`;
+  getStringUnits(): string {
+    return "kg";
   }
 }

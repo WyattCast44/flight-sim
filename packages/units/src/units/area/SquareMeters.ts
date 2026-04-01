@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Area } from "../../categories/Area.js";
 import { SQUARE_METERS_PER_SQUARE_FOOT } from "./constants.js";
@@ -29,11 +28,11 @@ export class SquareMeters extends Area {
     return this;
   }
 
-  getStringUnits(): string {
-    return "m²";
+  toSIUnits(): SquareMeters {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} m²`;
+  getStringUnits(): string {
+    return "m²";
   }
 }

@@ -5,14 +5,12 @@ import type { Inches } from "../units/length/Inches.js";
 import type { Kilometers } from "../units/length/Kilometers.js";
 import type { Meters } from "../units/length/Meters.js";
 import type { NauticalMiles } from "../units/length/NauticalMiles.js";
+import { Unit } from "./Unit.js";
 
 /**
  * Altitude relative to MSL or AGL. Internal numeric value is always **meters** (see concrete classes).
  */
-export abstract class Altitude {
-  /** Altitude in meters (internal representation). */
-  abstract readonly value: number;
-
+export abstract class Altitude extends Unit {
   abstract toMeanSeaLevel(): MeanSeaLevel;
   abstract toAboveGroundLevel(): AboveGroundLevel;
 
@@ -22,6 +20,5 @@ export abstract class Altitude {
   abstract toKilometers(): Kilometers;
   abstract toInches(): Inches;
 
-  abstract getStringUnits(): string;
-  abstract toString(): string;
+  abstract toSIUnits(): Altitude;
 }

@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Pressure } from "../../categories/Pressure.js";
 import {
@@ -56,11 +55,11 @@ export class Hectopascals extends Pressure {
     return this.toPascals().toPoundsPerSquareFoot();
   }
 
-  getStringUnits(): string {
-    return "hPa";
+  toSIUnits(): Pascals {
+    return this.toPascals();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} hPa`;
+  getStringUnits(): string {
+    return "hPa";
   }
 }

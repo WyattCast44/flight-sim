@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Power } from "../../categories/Power.js";
 import { WATTS_PER_HORSEPOWER } from "./constants.js";
@@ -26,11 +25,11 @@ export class Watts extends Power {
     return new Horsepower(this.value / WATTS_PER_HORSEPOWER);
   }
 
-  getStringUnits(): string {
-    return "W";
+  toSIUnits(): Watts {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} W`;
+  getStringUnits(): string {
+    return "W";
   }
 }

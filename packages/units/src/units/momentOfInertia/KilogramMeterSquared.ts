@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertNonNegative } from "../../core/validate.js";
 import { MomentOfInertia } from "../../categories/MomentOfInertia.js";
 import { KILOGRAM_METER_SQUARED_PER_SLUG_FOOT_SQUARED } from "./constants.js";
@@ -26,11 +25,11 @@ export class KilogramMeterSquared extends MomentOfInertia {
     return new SlugFootSquared(this.value / KILOGRAM_METER_SQUARED_PER_SLUG_FOOT_SQUARED);
   }
 
-  getStringUnits(): string {
-    return "kg·m²";
+  toSIUnits(): KilogramMeterSquared {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} kg·m²`;
+  getStringUnits(): string {
+    return "kg·m²";
   }
 }

@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Length } from "../../categories/Length.js";
 import { Feet } from "./Feet.js";
@@ -61,11 +60,11 @@ export class NauticalMiles extends Length {
     return this.toMeters().toInches();
   }
 
-  getStringUnits(): string {
-    return "NM";
+  toSIUnits(): Meters {
+    return this.toMeters();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} NM`;
+  getStringUnits(): string {
+    return "NM";
   }
 }

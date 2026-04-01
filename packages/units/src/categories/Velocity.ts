@@ -4,13 +4,12 @@ import type { KilometersPerHour } from "../units/velocity/KilometersPerHour.js";
 import type { Knots } from "../units/velocity/Knots.js";
 import type { MetersPerSecond } from "../units/velocity/MetersPerSecond.js";
 import type { MilesPerHour } from "../units/velocity/MilesPerHour.js";
+import { Unit } from "./Unit.js";
 
 /**
  * Speed. Internal base: {@link MetersPerSecond}.
  */
-export abstract class Velocity {
-  abstract readonly value: number;
-
+export abstract class Velocity extends Unit {
   abstract toMetersPerSecond(): MetersPerSecond;
   abstract toFeetPerSecond(): FeetPerSecond;
   abstract toKnots(): Knots;
@@ -18,6 +17,5 @@ export abstract class Velocity {
   abstract toKilometersPerHour(): KilometersPerHour;
   abstract toFeetPerMinute(): FeetPerMinute;
 
-  abstract getStringUnits(): string;
-  abstract toString(): string;
+  abstract toSIUnits(): MetersPerSecond;
 }

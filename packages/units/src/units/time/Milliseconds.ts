@@ -1,5 +1,4 @@
 import { Time } from "../../categories/Time.js";
-import { formatUnitValue } from "../../core/format.js";
 import { assertNonNegative } from "../../core/validate.js";
 import { Hours } from "./Hours.js";
 import { Minutes } from "./Minutes.js";
@@ -43,12 +42,12 @@ class Milliseconds extends Time {
     return new Hours(this.value / 1000 / 60 / 60);
   }
 
-  getStringUnits(): string {
-    return "ms";
+  toSIUnits(): Seconds {
+    return this.toSeconds();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} ms`;
+  getStringUnits(): string {
+    return "ms";
   }
 }
 

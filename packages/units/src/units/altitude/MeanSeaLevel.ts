@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Altitude } from "../../categories/Altitude.js";
 import { AboveGroundLevel } from "./AboveGroundLevel.js";
@@ -65,11 +64,11 @@ export class MeanSeaLevel extends Altitude {
     return new Meters(this.value).toInches();
   }
 
-  getStringUnits(): string {
-    return "m MSL";
+  toSIUnits(): MeanSeaLevel {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} m MSL`;
+  getStringUnits(): string {
+    return "m MSL";
   }
 }

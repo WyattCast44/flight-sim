@@ -1,12 +1,10 @@
 import type { KilogramsPerCubicMeter } from "../units/density/KilogramsPerCubicMeter.js";
 import type { SlugsPerCubicFoot } from "../units/density/SlugsPerCubicFoot.js";
+import { Unit } from "./Unit.js";
 
-export abstract class Density {
-  abstract readonly value: number;
-
+export abstract class Density extends Unit {
   abstract toKilogramsPerCubicMeter(): KilogramsPerCubicMeter;
   abstract toSlugsPerCubicFoot(): SlugsPerCubicFoot;
 
-  abstract getStringUnits(): string;
-  abstract toString(): string;
+  abstract toSIUnits(): KilogramsPerCubicMeter;
 }

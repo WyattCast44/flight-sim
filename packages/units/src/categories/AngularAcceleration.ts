@@ -1,12 +1,10 @@
 import type { DegreesPerSecondSquared } from "../units/angularAcceleration/DegreesPerSecondSquared.js";
 import type { RadiansPerSecondSquared } from "../units/angularAcceleration/RadiansPerSecondSquared.js";
+import { Unit } from "./Unit.js";
 
-export abstract class AngularAcceleration {
-  abstract readonly value: number;
-
+export abstract class AngularAcceleration extends Unit {
   abstract toRadiansPerSecondSquared(): RadiansPerSecondSquared;
   abstract toDegreesPerSecondSquared(): DegreesPerSecondSquared;
 
-  abstract getStringUnits(): string;
-  abstract toString(): string;
+  abstract toSIUnits(): RadiansPerSecondSquared;
 }

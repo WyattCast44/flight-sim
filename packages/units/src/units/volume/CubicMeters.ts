@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Volume } from "../../categories/Volume.js";
 import {
@@ -51,11 +50,11 @@ export class CubicMeters extends Volume {
     return new CubicFeet(this.value / CUBIC_METERS_PER_CUBIC_FOOT);
   }
 
-  getStringUnits(): string {
-    return "m³";
+  toSIUnits(): CubicMeters {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} m³`;
+  getStringUnits(): string {
+    return "m³";
   }
 }

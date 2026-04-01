@@ -52,6 +52,10 @@ export class Bearing extends Angles {
     return this;
   }
 
+  toSIUnits(): Radians {
+    return this.toRadians();
+  }
+
   getStringUnits(): string {
     return "°";
   }

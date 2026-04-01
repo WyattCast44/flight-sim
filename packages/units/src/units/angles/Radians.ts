@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { Angles } from "../../categories/Angles.js";
 import {
@@ -51,11 +50,11 @@ export class Radians extends Angles {
     return new Bearing(radiansToClockwiseBearingDegrees(this.value));
   }
 
-  getStringUnits(): string {
-    return "rad";
+  toSIUnits(): Radians {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} rad`;
+  getStringUnits(): string {
+    return "rad";
   }
 }

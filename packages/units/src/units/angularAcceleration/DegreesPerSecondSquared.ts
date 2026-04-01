@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { AngularAcceleration } from "../../categories/AngularAcceleration.js";
 import { RADIANS_PER_DEGREE } from "./constants.js";
@@ -26,11 +25,11 @@ export class DegreesPerSecondSquared extends AngularAcceleration {
     return this;
   }
 
-  getStringUnits(): string {
-    return "deg/s²";
+  toSIUnits(): RadiansPerSecondSquared {
+    return this.toRadiansPerSecondSquared();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} deg/s²`;
+  getStringUnits(): string {
+    return "deg/s²";
   }
 }

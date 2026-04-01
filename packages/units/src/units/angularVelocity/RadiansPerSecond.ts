@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertFiniteNumber } from "../../core/validate.js";
 import { AngularVelocity } from "../../categories/AngularVelocity.js";
 import {
@@ -38,11 +37,11 @@ export class RadiansPerSecond extends AngularVelocity {
     return new RevolutionsPerMinute(this.value / RADIANS_PER_REVOLUTION_PER_MINUTE);
   }
 
-  getStringUnits(): string {
-    return "rad/s";
+  toSIUnits(): RadiansPerSecond {
+    return this;
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} rad/s`;
+  getStringUnits(): string {
+    return "rad/s";
   }
 }

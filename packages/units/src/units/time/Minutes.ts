@@ -1,4 +1,3 @@
-import { formatUnitValue } from "../../core/format.js";
 import { assertNonNegative } from "../../core/validate.js";
 import { Time } from "../../categories/Time.js";
 import { SECONDS_PER_MINUTE } from "./constants.js";
@@ -44,11 +43,11 @@ export class Minutes extends Time {
     return new Hours(this.value / 60);
   }
 
-  getStringUnits(): string {
-    return "min";
+  toSIUnits(): Seconds {
+    return this.toSeconds();
   }
 
-  toString(): string {
-    return `${formatUnitValue(this.value)} min`;
+  getStringUnits(): string {
+    return "min";
   }
 }
