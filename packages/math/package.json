@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flight-sim/units": "*"
+    "@flight-sim/units": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.2",

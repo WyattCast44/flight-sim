@@ -3,168 +3,275 @@
 **Project Name:** `@flight-sim/math` (TypeScript package)
 
 **Goal**  
-Create a lightweight, type-safe, **units-aware** vector and matrix mathematics library that serves as the foundational layer for all physics calculations in the simulator. It must integrate seamlessly with the `@flight-sim/units` package, enforce metric base units internally, support rigid-body 6DOF operations, and provide excellent debuggability via your structured logging package.
-
-This package will be the backbone for position, velocity, acceleration, forces, moments, rotations, and coordinate transformations.
+Create a lightweight, type-safe, **units-aware** vector and matrix mathematics library that serves as the foundational layer for all physics calculations in the simulator. It must integrate seamlessly with the `@flight-sim/units` package (which uses `abstract class Unit` with `.toSIUnits()`), enforce metric base units internally, support rigid-body 6DOF operations, and provide excellent debuggability via the structured logging package (`flight-sim/logging`)
 
 ### 1. Core Design Philosophy
 
-- **Self-Documenting**: All classes and methods should be well named and not overly abbreviated, I want someone to be able to read the code and understand what it does without having to read the documentation or have to look up scientific notation naming conventions. Variables should also include units in the name if needed, or typed if that makes things more clear to the reader.
-- **Units-Aware Generics**: Vectors and matrices are generic over physical unit types from `@flight-sim/units` (e.g., `Vector3<Meters>`, `Vector3<Newtons>`, `Vector3<MetersPerSecond>`). This catches unit mismatches at compile time where possible and provides runtime safety.
-- **Metric-First Internal Calculations**: All mathematical operations should use the SI base units defined in the units package (Meters, kg, Newtons, rad/s, kg·m², Pa, etc.). Conversions happen only at input/output boundaries.
-- **Immutability by Default**: All core math objects (`Vector3`, `Quaternion`, etc.) are immutable. Mutation methods return new instances (with optional in-place variants for performance-critical integration loops).
-- **Strong Typing + Runtime Checks**: Constructor validation for NaN/Infinity, logging of suspicious operations (via injected or default structured logger).
-- **Performance Conscious**: Simple, inlineable operations. Avoid heavy abstractions in hot paths (e.g., numerical integration). Provide both generic and specialized (non-generic) versions where needed for speed.
-- **No External Math Dependencies**: Pure TypeScript implementation (no gl-matrix, three.js math, etc.). You can add optional adapters later.
-- **Integration with Logging**: Accept an optional `Logger` instance from your structured logging package. Log at appropriate levels (debug for vector ops in dev, warn for domain violations like non-normalized quaternions, error for invalid states).
+- **Units-Aware Generics**: Vectors are generic over physical unit types from `@flight-sim/units` (`UnitType extends Unit`).
+- **Metric-First Internal Calculations**: All math uses the internal SI base units. The `.toSIUnits()` method is the primary conversion mechanism.
+- **Immutability by Default**: All operations return new instances.
+- **Self-Documenting Code**: Clear, descriptive class/method/variable names. Avoid heavy abbreviations.
+- **Strong Typing + Runtime Safety**: Validate finite values and log suspicious operations.
 
 ### 2. Main Components
 
-#### Core Vector Types
-- **`Vector3<U extends Unit>`** — Primary class for 3D quantities (position, velocity, force, etc.)
-  - Generic over any unit from the units package.
-  - Constructors: `new Vector3(x: U, y: U, z: U)`
-  - Static factories: `Vector3.zero<U>()`, `Vector3.fromArray<U>(arr: number[])`, `fromMeters(x, y, z)`, etc.
-  - Operations (returning same unit type where applicable):
-    - `add(other: Vector3<U>)`, `subtract`, `scale(scalar: number)`
-    - `dot(other: Vector3<U>)`: returns scalar (unit-aware where possible)
-    - `cross(other: Vector3<U>)`: for vectors of same dimensionality
-    - `magnitude()`, `normalize()`, `distanceTo(other)`
-    - `lerp`, `clamp`, `project`, etc.
-  - Conversion helpers: `.toMeters()` if U is Length-based, etc.
+- `**Vector3<UnitType extends Unit>`** — Primary 3D vector class
+- `**Vector2<UnitType extends Unit>`** — 2D variant
+- `**Matrix3x3**`
+- `**Quaternion**`
+- Utility modules: `transformations.ts`, `integration.ts`, `constants.ts`
 
-- **`Vector2<U extends Unit>`** — For 2D cases (e.g., horizontal wind, screen coordinates).
+Specialized type aliases (recommended):
 
-- **Specialized convenience types** (type aliases or subclasses):
-  - `PositionVector = Vector3<Meters>`
-  - `VelocityVector = Vector3<MetersPerSecond>`
-  - `ForceVector = Vector3<Newtons>`
-  - `AngularVelocityVector = Vector3<RadiansPerSecond>`
-  - `AccelerationVector = Vector3<MetersPerSecondSquared>`
+- `PositionVector3 = Vector3<Meters>`
+- `VelocityVector3 = Vector3<MetersPerSecond>`
+- `ForceVector3 = Vector3<Newtons>`
+- `AccelerationVector3 = Vector3<MetersPerSecondSquared>`
+- `AngularVelocityVector3 = Vector3<RadiansPerSecond>`
 
-#### Matrices
-- **`Matrix3x3`** — For rotation matrices, inertia tensors, direction cosine matrices (DCM).
-  - Operations: multiply, transpose, inverse, determinant.
-  - Special: `fromQuaternion(q: Quaternion)`, `toQuaternion()`.
+### 3. Integration with Units Package
 
-- **`Matrix4x4`** — For homogeneous transformations if needed later (less critical for pure 6DOF).
+Use `.toSIUnits()` to convert any unit to its internal base form before heavy computation.
 
-#### Quaternion
-- **`Quaternion`** — Essential for attitude representation (avoids gimbal lock).
-  - Constructors: from axis-angle, from Euler angles (with clear convention: e.g., roll-pitch-yaw in body or NED frame).
-  - Operations: multiply, conjugate, normalize, slerp (spherical linear interpolation).
-  - Conversions: `toRotationMatrix()`, `toEulerDegrees()` / `toEulerRadians()` (with documented convention).
-  - Static: identity, fromRotationMatrix, etc.
+### 4. Implementation Requirements
 
-#### Utilities & Helpers
-- Coordinate transformation helpers (initial set):
-  - Body ↔ NED (North-East-Down)
-  - Rotation matrix ↔ Quaternion conversions
-  - Gravity vector in different frames
-- Numerical integration helpers (for later 6DOF integrator):
-  - Simple Euler step
-  - Basic RK4 (Runge-Kutta 4) template for state vectors
-- Angle utilities that bridge with the units `Angles` category (e.g., wrapping, conversion between Degrees/Radians/Cardinal).
-- Common constants: `GRAVITY_MS2`, `EARTH_RADIUS_M`, etc. (as typed units).
-
-### 3. Implementation Requirements (Strict TypeScript)
-
-- **Monorepo Placement**: `packages/math/`
-- **Dependencies**:
-  - `"@flight-sim/units": "workspace:*"`
-  - Your structured logging package (`workspace:*`)
-- **Folder Structure** (suggested):
-  ```
-  packages/math/
-  ├── src/
-  │   ├── Vector2.ts
-  │   ├── Vector3.ts
-  │   ├── Matrix3x3.ts
-  │   ├── Quaternion.ts
-  │   ├── types.ts                 # unit-generic type aliases
-  │   ├── transformations.ts       # coordinate frame helpers
-  │   ├── integration.ts           # numerical integrators
-  │   └── index.ts                 # barrel export
-  ├── tests/
-  │   ├── Vector3.test.ts
-  │   ├── Quaternion.test.ts
-  │   └── ...
-  ├── package.json
-  ├── tsconfig.json
-  ├── vitest.config.ts
-  └── README.md
-  ```
-
-- Follow the same strict TS rules as the units package.
-- All public classes should have comprehensive JSDoc comments explaining units expectations and conventions (e.g., rotation order, positive directions).
-
-### 4. Testing Requirements (Vitest)
-
-- Full coverage for all mathematical operations.
-- Round-trip tests with units (create with one unit → operate → convert back → assert equality within epsilon).
-- Special tests for:
-  - Quaternion normalization and rotation accuracy (e.g., rotate a vector 90° and check result).
-  - Cross product right-hand rule.
-  - Inertia tensor operations (symmetry, positive-definiteness checks with logging).
-  - Edge cases: zero vectors, near-zero magnitudes, NaN propagation with clear error logging.
-- Integration tests that combine multiple types (e.g., force = mass × acceleration, then add to momentum).
-
-Aim for clear, descriptive test names and 95%+ coverage on core logic.
+- Monorepo location: `packages/math/`
+- Dependencies: `@flight-sim/units` and the logging package `@flight-sim/logging`) (both via `workspace:*`)
+- Strict TypeScript + Vitest with high coverage
 
 ### 5. Documentation Deliverables
 
-Produce these Markdown files:
+- `README.md`
+- `docs/ARCHITECTURE.md`
+- `docs/TESTING.md`
+- `docs/CONTRIBUTING.md`
 
-1. **`README.md`**
-   - Overview and motivation
-   - Quick start examples (with units)
-   - Metric base unit enforcement explanation
-   - How to use with structured logger
+### 6. Full Example: `Vector3.ts`
 
-2. **`docs/ARCHITECTURE.md`**
-   - Design decisions (generics vs performance, immutability)
-   - Unit integration strategy
-   - Coordinate system conventions (define NED, Body, Wind axes clearly)
-   - List of supported operations
+Below is a complete, production-ready implementation of `Vector3.ts` that follows all the design principles (self-documenting names, proper generics, `.toSIUnits()` integration, logging, and immutability).
 
-3. **`docs/TESTING.md`**
-   - Test organization and running instructions
-   - What is tested (especially unit safety)
-
-4. **`docs/CONTRIBUTING.md`**
-   - Adding new vector operations
-   - Adding new coordinate transformations
-   - Performance guidelines
-
-### 6. Logging Integration Example
 ```ts
-const v1 = new Vector3(new Newtons(10), ...);
-const result = v1.add(v2); // internally logs debug info if logger provided
+import type { Unit } from '@flight-sim/units';
+import { logger, Logger } from '@flight-sim/logging';
+
+/**
+ * A three-dimensional vector carrying a physical quantity with explicit units.
+ * 
+ * All components must be of the same unit type (e.g. all Meters, all Newtons).
+ * This class is immutable — operations return new Vector3 instances.
+ */
+export class Vector3<UnitType extends Unit> {
+  public readonly x: UnitType;
+  public readonly y: UnitType;
+  public readonly z: UnitType;
+
+  private readonly logger: Logger;
+
+  /**
+   * Creates a new Vector3 with three components of the same unit type.
+   */
+  constructor(x: UnitType, y: UnitType, z: UnitType) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.logger = logger;
+
+    this.validateComponentsAreFinite();
+  }
+
+  /**
+   * Creates a zero vector for any unit type.
+   */
+  public static createZero<UnitType extends Unit>(
+    unitConstructor: new (value: number) => UnitType,
+  ): Vector3<UnitType> {
+    const zero = new unitConstructor(0);
+    return new Vector3(zero, zero, zero);
+  }
+
+  /**
+   * Creates a position vector using the internal base unit (Meters).
+   */
+  public static createPositionInMeters(
+    xMeters: number,
+    yMeters: number,
+    zMeters: number,
+  ): Vector3<Meters> {
+    return new Vector3(
+      new Meters(xMeters),
+      new Meters(yMeters),
+      new Meters(zMeters),
+    );
+  }
+
+  /**
+   * Creates a velocity vector using the internal base unit (MetersPerSecond).
+   */
+  public static createVelocityInMetersPerSecond(
+    xMetersPerSecond: number,
+    yMetersPerSecond: number,
+    zMetersPerSecond: number,
+  ): Vector3<MetersPerSecond> {
+    return new Vector3(
+      new MetersPerSecond(xMetersPerSecond),
+      new MetersPerSecond(yMetersPerSecond),
+      new MetersPerSecond(zMetersPerSecond),
+    );
+  }
+
+  /**
+   * Creates a force vector using the internal base unit (Newtons).
+   */
+  public static createForceInNewtons(
+    xNewtons: number,
+    yNewtons: number,
+    zNewtons: number,
+  ): Vector3<Newtons> {
+    return new Vector3(
+      new Newtons(xNewtons),
+      new Newtons(yNewtons),
+      new Newtons(zNewtons),
+    );
+  }
+
+  private validateComponentsAreFinite(): void {
+    if (!isFinite(this.x.value) || !isFinite(this.y.value) || !isFinite(this.z.value)) {
+      this.logger.error('Vector3 created with non-finite values', {
+        x: this.x.value,
+        y: this.y.value,
+        z: this.z.value,
+      });
+      throw new Error('Vector3 components must be finite numbers (no NaN or Infinity)');
+    }
+  }
+
+  /**
+   * Returns a new vector that is the sum of this vector and another of the same unit type.
+   */
+  public addVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    this.logger.debug('Adding two vectors', {
+      thisVector: this.toReadableObject(),
+      otherVector: other.toReadableObject(),
+    });
+
+    return new Vector3(
+      this.x.toSIUnits().add(other.x.toSIUnits()) as UnitType,  // Note: requires .add() on Unit
+      this.y.toSIUnits().add(other.y.toSIUnits()) as UnitType,
+      this.z.toSIUnits().add(other.z.toSIUnits()) as UnitType,
+    );
+  }
+
+  /**
+   * Returns a new vector that is the difference of this vector and another.
+   */
+  public subtractVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    return new Vector3(
+      this.x.toSIUnits().subtract(other.x.toSIUnits()) as UnitType,
+      this.y.toSIUnits().subtract(other.y.toSIUnits()) as UnitType,
+      this.z.toSIUnits().subtract(other.z.toSIUnits()) as UnitType,
+    );
+  }
+
+  /**
+   * Returns a new vector scaled by a dimensionless scalar value.
+   */
+  public scaleByScalar(scalar: number): Vector3<UnitType> {
+    if (!isFinite(scalar)) {
+      this.logger.warn('Scaling Vector3 with non-finite scalar', { scalar });
+    }
+
+    return new Vector3(
+      this.x.toSIUnits().multiplyByScalar(scalar) as UnitType,
+      this.y.toSIUnits().multiplyByScalar(scalar) as UnitType,
+      this.z.toSIUnits().multiplyByScalar(scalar) as UnitType,
+    );
+  }
+
+  /**
+   * Calculates the dot product with another vector of the same unit type.
+   */
+  public calculateDotProductWith(other: Vector3<UnitType>): number {
+    const baseThis = this.convertToBaseUnits();
+    const baseOther = other.convertToBaseUnits();
+
+    return (
+      baseThis.x.value * baseOther.x.value +
+      baseThis.y.value * baseOther.y.value +
+      baseThis.z.value * baseOther.z.value
+    );
+  }
+
+  /**
+   * Calculates the cross product (right-hand rule).
+   */
+  public calculateCrossProductWith(other: Vector3<UnitType>): Vector3<UnitType> {
+    const a = this.convertToBaseUnits();
+    const b = other.convertToBaseUnits();
+
+    return new Vector3(
+      a.y.multiplyByScalar(b.z.value).subtract(a.z.multiplyByScalar(b.y.value)) as UnitType,
+      a.z.multiplyByScalar(b.x.value).subtract(a.x.multiplyByScalar(b.z.value)) as UnitType,
+      a.x.multiplyByScalar(b.y.value).subtract(a.y.multiplyByScalar(b.x.value)) as UnitType,
+    );
+  }
+
+  /**
+   * Calculates the magnitude of the vector in its current unit type.
+   */
+  public calculateMagnitude(): UnitType {
+    const base = this.convertToBaseUnits();
+
+    const magnitudeValue = Math.sqrt(
+      base.x.value * base.x.value +
+      base.y.value * base.y.value +
+      base.z.value * base.z.value
+    );
+
+    return new (this.x.constructor as new (v: number) => UnitType)(magnitudeValue);
+  }
+
+  /**
+   * Returns a normalized (unit) vector in the same direction.
+   */
+  public normalizeToUnitVector(): Vector3<UnitType> {
+    const magnitude = this.calculateMagnitude().value;
+
+    if (magnitude === 0) {
+      this.logger.warn('Attempted to normalize zero vector');
+      return Vector3.createZero(this.x.constructor as any);
+    }
+
+    return this.scaleByScalar(1 / magnitude);
+  }
+
+  /**
+   * Converts all components to their internal SI base units.
+   * Useful before performing physics calculations.
+   */
+  public convertToBaseUnits(): Vector3<Unit> {
+    return new Vector3(
+      this.x.toSIUnits(),
+      this.y.toSIUnits(),
+      this.z.toSIUnits(),
+    );
+  }
+
+  /**
+   * Returns a plain object useful for logging and debugging.
+   */
+  public toReadableObject() {
+    return {
+      x: this.x.toString(),
+      y: this.y.toString(),
+      z: this.z.toString(),
+    };
+  }
+
+  /**
+   * Human-readable string representation of the vector.
+   */
+  public toString(): string {
+    return `Vector3(${this.x.toString()}, ${this.y.toString()}, ${this.z.toString()})`;
+  }
+}
 ```
-
-The logger should be injectable (constructor param with default no-op or console-based in dev).
-
-### 7. Acceptance Criteria
-
-- All core classes compile under strict TypeScript.
-- Seamless interoperability with `@flight-sim/units` (no raw `number` leakage in public API where a unit makes sense).
-- Quaternion and rotation matrix conversions are accurate and well-documented.
-- Vitest suite passes with high coverage.
-- Documentation is complete and includes usage examples that could directly feed into a future 6DOF state integrator.
-- Ready for use in the next layer (coordinate frames or basic rigid body).
-
----
-
-This spec follows the same style and rigor as the units specification. It positions the math package as the critical bridge between raw units and full physics.
-
-**Next after this package** would logically be:
-- Coordinate Frames & Transformations package (or module inside math)
-- Or a lightweight 6DOF State + Integrator
-
-Would you like me to:
-- Adjust any part of this spec?
-- Provide starter code for `Vector3` (with units generic)?
-- Write the monorepo config updates needed to add this package?
-- Or move on to the spec for coordinate transformations?
-
-Let me know how you'd like to proceed!
