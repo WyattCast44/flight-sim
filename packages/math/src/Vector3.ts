@@ -1,4 +1,4 @@
-import { Meters, MetersPerSecond, Newtons, Unit } from "@flight-sim/units";
+import { Newtons, Unit } from "@flight-sim/units";
 
 export class Vector3<UnitType extends Unit> {
   public readonly x: UnitType;
@@ -29,52 +29,6 @@ export class Vector3<UnitType extends Unit> {
     const zero = new unitConstructor(0);
 
     return new Vector3<UnitType>(zero, zero, zero);
-  }
-
-  /**
-   * Creates a position vector using the SI units for position (Meters).
-   *
-   * @param xMeters - The x component of the position in Meters.
-   * @param yMeters - The y component of the position in Meters.
-   * @param zMeters - The z component of the position in Meters.
-   * @returns A new Vector3 with the position components in Meters.
-   */
-  public static createPositionInMeters(
-    xMeters: number | Meters,
-    yMeters: number | Meters,
-    zMeters: number | Meters,
-  ): Vector3<Meters> {
-    return new Vector3(
-      xMeters instanceof Meters ? xMeters : new Meters(xMeters),
-      yMeters instanceof Meters ? yMeters : new Meters(yMeters),
-      zMeters instanceof Meters ? zMeters : new Meters(zMeters),
-    );
-  }
-
-  /**
-   * Creates a velocity vector using the SI units for velocity (MetersPerSecond).
-   *
-   * @param xMetersPerSecond - The x component of the velocity in MetersPerSecond.
-   * @param yMetersPerSecond - The y component of the velocity in MetersPerSecond.
-   * @param zMetersPerSecond - The z component of the velocity in MetersPerSecond.
-   * @returns A new Vector3 with the velocity components in MetersPerSecond.
-   */
-  public static createVelocityInMetersPerSecond(
-    xMetersPerSecond: number | MetersPerSecond,
-    yMetersPerSecond: number | MetersPerSecond,
-    zMetersPerSecond: number | MetersPerSecond,
-  ): Vector3<MetersPerSecond> {
-    return new Vector3(
-      xMetersPerSecond instanceof MetersPerSecond
-        ? xMetersPerSecond
-        : new MetersPerSecond(xMetersPerSecond),
-      yMetersPerSecond instanceof MetersPerSecond
-        ? yMetersPerSecond
-        : new MetersPerSecond(yMetersPerSecond),
-      zMetersPerSecond instanceof MetersPerSecond
-        ? zMetersPerSecond
-        : new MetersPerSecond(zMetersPerSecond),
-    );
   }
 
   /**
@@ -116,6 +70,10 @@ export class Vector3<UnitType extends Unit> {
     );
   }
 
+  public clone(): Vector3<UnitType> {
+    return new Vector3(this.x, this.y, this.z);
+  }
+
   public toReadableObject(): { x: string; y: string; z: string } {
     return {
       x: this.x.toString(),
@@ -128,6 +86,14 @@ export class Vector3<UnitType extends Unit> {
     return `Vector3(${this.x.toString()}, ${this.y.toString()}, ${this.z.toString()})`;
   }
 
+  public toArray(): [UnitType, UnitType, UnitType] {
+    return [this.x, this.y, this.z];
+  }
+
+  public toRawArray(): [number, number, number] {
+    return [this.x.value, this.y.value, this.z.value];
+  }
+
   private validateComponentsAreFinite(): void {
     if (
       !isFinite(this.x.value) ||
@@ -135,7 +101,7 @@ export class Vector3<UnitType extends Unit> {
       !isFinite(this.z.value)
     ) {
       throw new Error(
-        "Vector3 components must be finite numbers (no NaN or Infinity). Values: " +
+        "Components must be finite numbers (no NaN or Infinity). Values: " +
           JSON.stringify({
             x: this.x.value,
             y: this.y.value,
@@ -144,4 +110,102 @@ export class Vector3<UnitType extends Unit> {
       );
     }
   }
+
+  /**
+   * MATH OPERATIONS
+   */
+
+  /**
+   * Adds two vectors of the same unit type.
+   * 
+   * @param other - The vector to add to this vector.
+   * @returns A new Vector3 with the sum of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const v3 = v1.addVector(v2);
+   * console.log(v3.toString()); // "Vector3(5.00 m, 7.00 m, 9.00 m)"
+   * ```
+   */
+  public addVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    // We convert to SI, add in base units, then convert back to the original unit type
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    const resultBaseX = thisBase.x.add(otherBase.x);
+    const resultBaseY = thisBase.y.add(otherBase.y);
+    const resultBaseZ = thisBase.z.add(otherBase.z);
+
+    let xConstructor = this.x.constructor as typeof Unit;
+    let yConstructor = this.y.constructor as typeof Unit;
+    let zConstructor = this.z.constructor as typeof Unit;
+
+    return new Vector3(
+      xConstructor.fromSIValue(resultBaseX) as UnitType,
+      yConstructor.fromSIValue(resultBaseY) as UnitType,
+      zConstructor.fromSIValue(resultBaseZ) as UnitType,
+    );
+  }
+
+  /**
+   * Subtracts two vectors of the same unit type.
+   * 
+   * @param other - The vector to subtract from this vector.
+   * @returns A new Vector3 with the difference of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const v3 = v1.subtractVector(v2);
+   * console.log(v3.toString()); // "Vector3(-3.00 m, -3.00 m, -3.00 m)"
+   * ```
+   */
+  public subtractVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    // We convert to SI, subtract in base units, then convert back to the original unit type
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    const resultBaseX = thisBase.x.subtract(otherBase.x);
+    const resultBaseY = thisBase.y.subtract(otherBase.y);
+    const resultBaseZ = thisBase.z.subtract(otherBase.z);
+
+    let xConstructor = this.x.constructor as typeof Unit;
+    let yConstructor = this.y.constructor as typeof Unit;
+    let zConstructor = this.z.constructor as typeof Unit;
+
+    return new Vector3( 
+      xConstructor.fromSIValue(resultBaseX) as UnitType,
+      yConstructor.fromSIValue(resultBaseY) as UnitType,
+      zConstructor.fromSIValue(resultBaseZ) as UnitType,
+    );
+  }
+
+  /**
+   * Scales a vector by a scalar.
+   * 
+   * @param scalar - The scalar to scale the vector by.
+   * @returns A new Vector3 with the scaled vector.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = v1.scaleByScalar(2);
+   * console.log(v2.toString()); // "Vector3(2.00 m, 4.00 m, 6.00 m)"
+   * ```
+   */
+  public scaleByScalar(scalar: number): Vector3<UnitType> {
+    return new Vector3(
+      this.x.multiplyByScalar(scalar) as UnitType,
+      this.y.multiplyByScalar(scalar) as UnitType,
+      this.z.multiplyByScalar(scalar) as UnitType,
+    );
+  }
+
+  /**
+   * Todo: implement: 
+   * - magnitude: in the current unit type, ie. Meters, Feet, etc.
+   * - dot product
+   * - cross product
+   * - normalize to unit vector
+   */
 }

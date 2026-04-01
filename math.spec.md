@@ -15,8 +15,8 @@ Create a lightweight, type-safe, **units-aware** vector and matrix mathematics l
 
 ### 2. Main Components
 
-- `**Vector3<UnitType extends Unit>`** — Primary 3D vector class
-- `**Vector2<UnitType extends Unit>`** — 2D variant
+- `**Vector3<UnitType extends Unit>`\*\* — Primary 3D vector class
+- `**Vector2<UnitType extends Unit>`\*\* — 2D variant
 - `**Matrix3x3**`
 - `**Quaternion**`
 - Utility modules: `transformations.ts`, `integration.ts`, `constants.ts`
@@ -51,12 +51,12 @@ Use `.toSIUnits()` to convert any unit to its internal base form before heavy co
 Below is a complete, production-ready implementation of `Vector3.ts` that follows all the design principles (self-documenting names, proper generics, `.toSIUnits()` integration, logging, and immutability).
 
 ```ts
-import type { Unit } from '@flight-sim/units';
-import { logger, Logger } from '@flight-sim/logging';
+import type { Unit } from "@flight-sim/units";
+import { logger, Logger } from "@flight-sim/logging";
 
 /**
  * A three-dimensional vector carrying a physical quantity with explicit units.
- * 
+ *
  * All components must be of the same unit type (e.g. all Meters, all Newtons).
  * This class is immutable — operations return new Vector3 instances.
  */
@@ -135,13 +135,19 @@ export class Vector3<UnitType extends Unit> {
   }
 
   private validateComponentsAreFinite(): void {
-    if (!isFinite(this.x.value) || !isFinite(this.y.value) || !isFinite(this.z.value)) {
-      this.logger.error('Vector3 created with non-finite values', {
+    if (
+      !isFinite(this.x.value) ||
+      !isFinite(this.y.value) ||
+      !isFinite(this.z.value)
+    ) {
+      this.logger.error("Vector3 created with non-finite values", {
         x: this.x.value,
         y: this.y.value,
         z: this.z.value,
       });
-      throw new Error('Vector3 components must be finite numbers (no NaN or Infinity)');
+      throw new Error(
+        "Vector3 components must be finite numbers (no NaN or Infinity)",
+      );
     }
   }
 
@@ -149,13 +155,13 @@ export class Vector3<UnitType extends Unit> {
    * Returns a new vector that is the sum of this vector and another of the same unit type.
    */
   public addVector(other: Vector3<UnitType>): Vector3<UnitType> {
-    this.logger.debug('Adding two vectors', {
+    this.logger.debug("Adding two vectors", {
       thisVector: this.toReadableObject(),
       otherVector: other.toReadableObject(),
     });
 
     return new Vector3(
-      this.x.toSIUnits().add(other.x.toSIUnits()) as UnitType,  // Note: requires .add() on Unit
+      this.x.toSIUnits().add(other.x.toSIUnits()) as UnitType, // Note: requires .add() on Unit
       this.y.toSIUnits().add(other.y.toSIUnits()) as UnitType,
       this.z.toSIUnits().add(other.z.toSIUnits()) as UnitType,
     );
@@ -177,7 +183,7 @@ export class Vector3<UnitType extends Unit> {
    */
   public scaleByScalar(scalar: number): Vector3<UnitType> {
     if (!isFinite(scalar)) {
-      this.logger.warn('Scaling Vector3 with non-finite scalar', { scalar });
+      this.logger.warn("Scaling Vector3 with non-finite scalar", { scalar });
     }
 
     return new Vector3(
@@ -204,14 +210,22 @@ export class Vector3<UnitType extends Unit> {
   /**
    * Calculates the cross product (right-hand rule).
    */
-  public calculateCrossProductWith(other: Vector3<UnitType>): Vector3<UnitType> {
+  public calculateCrossProductWith(
+    other: Vector3<UnitType>,
+  ): Vector3<UnitType> {
     const a = this.convertToBaseUnits();
     const b = other.convertToBaseUnits();
 
     return new Vector3(
-      a.y.multiplyByScalar(b.z.value).subtract(a.z.multiplyByScalar(b.y.value)) as UnitType,
-      a.z.multiplyByScalar(b.x.value).subtract(a.x.multiplyByScalar(b.z.value)) as UnitType,
-      a.x.multiplyByScalar(b.y.value).subtract(a.y.multiplyByScalar(b.x.value)) as UnitType,
+      a.y
+        .multiplyByScalar(b.z.value)
+        .subtract(a.z.multiplyByScalar(b.y.value)) as UnitType,
+      a.z
+        .multiplyByScalar(b.x.value)
+        .subtract(a.x.multiplyByScalar(b.z.value)) as UnitType,
+      a.x
+        .multiplyByScalar(b.y.value)
+        .subtract(a.y.multiplyByScalar(b.x.value)) as UnitType,
     );
   }
 
@@ -222,12 +236,14 @@ export class Vector3<UnitType extends Unit> {
     const base = this.convertToBaseUnits();
 
     const magnitudeValue = Math.sqrt(
-      base.x.value * base.x.value +
-      base.y.value * base.y.value +
-      base.z.value * base.z.value
+        base.x.value * base.x.value +
+        base.y.value * base.y.value +
+        base.z.value * base.z.value,
     );
 
-    return new (this.x.constructor as new (v: number) => UnitType)(magnitudeValue);
+    return new (this.x.constructor as new (v: number) => UnitType)(
+      magnitudeValue,
+    );
   }
 
   /**
@@ -237,7 +253,7 @@ export class Vector3<UnitType extends Unit> {
     const magnitude = this.calculateMagnitude().value;
 
     if (magnitude === 0) {
-      this.logger.warn('Attempted to normalize zero vector');
+      this.logger.warn("Attempted to normalize zero vector");
       return Vector3.createZero(this.x.constructor as any);
     }
 
