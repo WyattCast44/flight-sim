@@ -36,10 +36,6 @@ export class PositionVector3 extends Vector3<Meters> {
     );
   }
 
-  public override clone(): PositionVector3 {
-    return new PositionVector3(this.north, this.east, this.down);
-  }
-
   public override toReadableObject(): {
     x: string;
     y: string;

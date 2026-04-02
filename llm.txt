@@ -1,0 +1,20 @@
+public squaredMagnitude(): number {
+  const base = this.convertToBaseUnits();
+
+  const sqMagValue =
+    base.x.value * base.x.value +
+    base.y.value * base.y.value +
+    base.z.value * base.z.value;
+
+  return sqMagValue;
+}
+
+public magnitude(): UnitType {
+  const sqMag = this.squaredMagnitude();
+
+  const magValue = Math.sqrt(sqMag);
+
+  const constructor = this.x.constructor as typeof Unit;
+
+  return constructor.fromSIValue(magValue) as UnitType;
+}

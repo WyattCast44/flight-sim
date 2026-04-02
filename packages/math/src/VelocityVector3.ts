@@ -58,10 +58,6 @@ export class VelocityVector3 extends Vector3<MetersPerSecond> {
     );
   }
 
-  public override clone(): VelocityVector3 {
-    return new VelocityVector3(this.forward, this.right, this.down);
-  }
-
   public override toReadableObject(): {
     x: string;
     y: string;

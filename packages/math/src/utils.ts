@@ -9,3 +9,7 @@ export function radToDeg(radians: number): number {
 export function round(value: number, precision: number = 2): number {
     return Math.round(value * Math.pow(10, precision)) / Math.pow(10, precision);
 }
+
+export function isApproximatelyZero(value: number, epsilon: number = 1e-8): boolean {
+    return Math.abs(value) < epsilon;
+}

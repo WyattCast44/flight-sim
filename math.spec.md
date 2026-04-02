@@ -25,9 +25,9 @@ Specialized type aliases (recommended):
 
 - `PositionVector3 = Vector3<Meters>`
 - `VelocityVector3 = Vector3<MetersPerSecond>`
-- `ForceVector3 = Vector3<Newtons>`
-- `AccelerationVector3 = Vector3<MetersPerSecondSquared>`
-- `AngularVelocityVector3 = Vector3<RadiansPerSecond>`
+- `ForceVector3 = Vector3<Newtons>` **TODO: add this**
+- `AccelerationVector3 = Vector3<MetersPerSecondSquared>` **TODO: add this**
+- `AngularVelocityVector3 = Vector3<RadiansPerSecond>` **TODO: add this**
 
 ### 3. Integration with Units Package
 

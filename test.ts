@@ -44,6 +44,14 @@ console.log(v11, v11.toReadableObject(), v11.toString());
 let v12 = v10.scaleByScalar(2);
 console.log(v12, v12.toReadableObject(), v12.toString());
 
+let v13 = new Vector3(new Feet(3), new Feet(4), new Feet(5)).magnitude();
+console.log("Magnitude of 3ft, 4ft, 5ft: ", v13.toString());
+
+let v14 = new Vector3(new Meters(3), new Meters(4), new Meters(5));
+let v15 = v14.normalize();
+console.log("Normalized 3m, 4m, 5m: ", v15.toString());
+console.log("Magnitude of normalized vector: ", v15.magnitude().toString());
+
 // const simulator = new Simulator({ tickRate: 60 });
 
 // simulator.onStart(() => {
