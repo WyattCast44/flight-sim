@@ -38,6 +38,7 @@ import {
   NewtonMeters,
   Newtons,
   NauticalMiles,
+  PascalSeconds,
   Pascals,
   PoundsForce,
   PoundsMass,
@@ -259,6 +260,12 @@ describe("static factory coverage", () => {
     expectClose(KilogramsPerCubicMeter.fromSlugsPerCubicFoot(d.toSlugsPerCubicFoot().value).value, d.value);
     const s = SlugsPerCubicFoot.fromSlugsPerCubicFoot(0.002);
     expectClose(SlugsPerCubicFoot.fromKilogramsPerCubicMeter(s.toKilogramsPerCubicMeter().value).value, s.value);
+  });
+
+  it("viscosity", () => {
+    const eta = PascalSeconds.fromPascalSeconds(1.002e-3);
+    expectClose(PascalSeconds.fromPascalSeconds(eta.toPascalSeconds().value).value, eta.value);
+    expectClose(PascalSeconds.fromSIValue(eta.toSIUnits().value).value, eta.value);
   });
 
   it("pressure", () => {

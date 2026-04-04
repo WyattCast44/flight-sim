@@ -3,6 +3,7 @@ import {
   Feet,
   Meters,
   Milliseconds,
+  PascalSeconds,
   Radians,
   Seconds,
   Unit,
@@ -23,6 +24,11 @@ describe("fromSIValue", () => {
     expectClose(Radians.fromSIValue(Math.PI).value, Math.PI);
     expectClose(Degrees.fromSIValue(Math.PI).value, 180);
     expectClose(Degrees.fromSIValue(new Radians(Math.PI)).value, 180);
+  });
+
+  it("viscosity: SI scalar is Pa·s", () => {
+    expectClose(PascalSeconds.fromSIValue(0.0174).value, 0.0174);
+    expectClose(PascalSeconds.fromSIValue(PascalSeconds.fromPascalSeconds(0.0174)).value, 0.0174);
   });
 
   it("time: SI scalar is seconds (including for Milliseconds)", () => {

@@ -16,4 +16,5 @@ export { Temperature } from "./Temperature.js";
 export { Time } from "./Time.js";
 export { Torque } from "./Torque.js";
 export { Velocity } from "./Velocity.js";
+export { Viscosity } from "./Viscosity.js";
 export { Volume } from "./Volume.js";

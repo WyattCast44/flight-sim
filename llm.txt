@@ -1,20 +1,100 @@
-public squaredMagnitude(): number {
-  const base = this.convertToBaseUnits();
+import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
 
-  const sqMagValue =
-    base.x.value * base.x.value +
-    base.y.value * base.y.value +
-    base.z.value * base.z.value;
+/**
+ * Abstract base class for gravitational acceleration models.
+ *
+ * In flight simulation, gravity affects:
+ * - Weight and lift calculations
+ * - Atmospheric pressure/density formulas (when using variable g)
+ * - Orbital mechanics (if extending to space)
+ *
+ * Prefer `getGravityAtAltitude()` for most aircraft work.
+ */
+export abstract class GravityModel {
+  /**
+   * Returns local gravitational acceleration at the given geometric altitude.
+   * This is the primary method used by AtmosphereModel and flight dynamics.
+   * 
+   * @param altitude - The altitude to get the gravity at.
+   * @returns The gravity at the given altitude in meters per second squared.
+   */
+  abstract getGravityAtAltitude(altitude: Feet | Meters | Altitude): MetersPerSecondSquared;
 
-  return sqMagValue;
+  /**
+   * Returns gravitational acceleration at mean sea level (for this model).
+   * Often used as reference for standard atmosphere calculations.
+   * 
+   * @returns The gravity at sea level in meters per second squared.
+   */
+  abstract getGravityAtSeaLevel(): MetersPerSecondSquared;
 }
 
-public magnitude(): UnitType {
-  const sqMag = this.squaredMagnitude();
+import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
+import { GravityModel } from "./GravityModel";
 
-  const magValue = Math.sqrt(sqMag);
+/**
+ * Simple constant gravity model using standard value g₀ = 9.80665 m/s².
+ *
+ * This is the most commonly used model for general aviation and airliner simulations
+ * where extreme precision in gravity variation is not required.
+ */
+class ConstantGravityModel extends GravityModel {
+  public readonly standardGravity: MetersPerSecondSquared;
 
-  const constructor = this.x.constructor as typeof Unit;
+  constructor(value: MetersPerSecondSquared = new MetersPerSecondSquared(9.80665)) {
+    super();
+    this.standardGravity = value;
+  }
 
-  return constructor.fromSIValue(magValue) as UnitType;
+  getGravityAtAltitude(_: Feet | Meters | Altitude): MetersPerSecondSquared {
+    return this.standardGravity;
+  }
+
+  getGravityAtSeaLevel(): MetersPerSecondSquared {
+    return this.standardGravity;
+  }
+}
+
+export default ConstantGravityModel;
+
+import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
+import { GravityModel } from "./GravityModel";
+
+/**
+ * WGS84-based gravity model that varies with geometric altitude.
+ *
+ * Uses the simplified free-air approximation:
+ *   g(h) ≈ g₀ * (1 - 2h/R)   where R ≈ 6371 km (mean Earth radius)
+ *
+ * This is sufficiently accurate up to 100 km for aircraft simulation.
+ * Gravity decreases by about 0.003 m/s² per 10 km of altitude.
+ */
+export class WGS84GravityModel extends GravityModel {
+  private static readonly EARTH_RADIUS_M = 6_371_000; // Mean radius, WGS84 approx
+
+  private readonly seaLevelGravity: MetersPerSecondSquared;
+
+  constructor(seaLevelG: MetersPerSecondSquared = new MetersPerSecondSquared(9.80665)) {
+    super();
+    this.seaLevelGravity = seaLevelG;
+  }
+
+  getGravityAtAltitude(altitude: Feet | Meters | Altitude): MetersPerSecondSquared {
+    const h = altitude.toMeters().value;
+
+    // Prevent unrealistic values at very high altitudes
+    if (h > 100_000) {
+      throw new Error(`Gravity requested at extreme altitude: ${h}m`);
+    }
+
+    // Free-air correction: g decreases linearly with height
+    const factor = 1 - (2 * h) / WGS84GravityModel.EARTH_RADIUS_M;
+    const g = this.seaLevelGravity.value * factor;
+
+    return new MetersPerSecondSquared(Math.max(g, 9.75)); // safety floor is 9.75 m/s² so that we don't get negative gravity
+  }
+
+  getGravityAtSeaLevel(): MetersPerSecondSquared {
+    return this.seaLevelGravity;
+  }
 }

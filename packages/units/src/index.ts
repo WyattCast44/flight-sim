@@ -62,6 +62,8 @@ export { Pascals } from "./units/pressure/Pascals.js";
 export { PoundsPerSquareFoot } from "./units/pressure/PoundsPerSquareFoot.js";
 export { PoundsPerSquareInch } from "./units/pressure/PoundsPerSquareInch.js";
 
+export { PascalSeconds } from "./units/viscosity/PascalSeconds.js";
+
 export { Horsepower } from "./units/power/Horsepower.js";
 export { Watts } from "./units/power/Watts.js";
 

@@ -35,6 +35,7 @@ import {
   NewtonMeters,
   Newtons,
   NauticalMiles,
+  PascalSeconds,
   Pascals,
   PoundsForce,
   PoundsMass,
@@ -131,6 +132,9 @@ describe("sanity — import and round-trip smoke", () => {
       SlugsPerCubicFoot.fromSlugsPerCubicFoot(1).toKilogramsPerCubicMeter().toSlugsPerCubicFoot().value,
       1,
     );
+
+    expectClose(PascalSeconds.fromPascalSeconds(0.001).toSIUnits().toPascalSeconds().value, 0.001);
+    expectClose(PascalSeconds.fromSIValue(1.8e-5).toPascalSeconds().value, 1.8e-5);
 
     expectClose(Pascals.fromPascals(100000).toHectopascals().toPascals().value, 100000);
     expectClose(Hectopascals.fromHectopascals(1000).toPascals().toHectopascals().value, 1000);
