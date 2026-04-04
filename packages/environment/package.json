@@ -1,5 +1,5 @@
 {
-  "name": "@flight-sim/math",
+  "name": "@flight-sim/environment",
   "version": "0.1.0",
   "private": false,
   "main": "./dist/index.js",
@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@flight-sim/math": "*",
     "@flight-sim/units": "*"
   },
   "devDependencies": {

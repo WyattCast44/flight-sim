@@ -5,7 +5,8 @@
       "@flight-sim/units": ["./packages/units/src"],
       "@flight-sim/simulator": ["./packages/simulator/src"],
       "@flight-sim/logging": ["./packages/logging/src"],
-      "@flight-sim/math": ["./packages/math/src"]
+      "@flight-sim/math": ["./packages/math/src"],
+      "@flight-sim/environment": ["./packages/environment/src"]
     }
   }
 }
