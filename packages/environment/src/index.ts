@@ -9,3 +9,7 @@ export { AtmosphereModel } from "./atmosphere/AtmosphereModel";
 export { AtmosphereConditions } from "./atmosphere/AtmosphereConditions";
 export { DeviatedAtmosphere } from "./atmosphere/DeviatedAtmosphere";
 export { StandardAtmosphere1976 } from "./atmosphere/StandardAtmosphere1976";
+
+// Wind Models
+export { WindModel } from "./wind/WindModel";
+export { TurbulenceIntensity } from "./wind/Turbulence";

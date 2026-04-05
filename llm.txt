@@ -1,100 +1,505 @@
-import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
+The old wind model is a reasonable starting point for a simple layered wind system, but it has several limitations for a modern, technically defensible flight simulator targeting GA, airliners, and military aircraft up to ~100k ft. Here's a structured analysis and my recommendation for a new design.
 
-/**
- * Abstract base class for gravitational acceleration models.
- *
- * In flight simulation, gravity affects:
- * - Weight and lift calculations
- * - Atmospheric pressure/density formulas (when using variable g)
- * - Orbital mechanics (if extending to space)
- *
- * Prefer `getGravityAtAltitude()` for most aircraft work.
- */
-export abstract class GravityModel {
-  /**
-   * Returns local gravitational acceleration at the given geometric altitude.
-   * This is the primary method used by AtmosphereModel and flight dynamics.
-   * 
-   * @param altitude - The altitude to get the gravity at.
-   * @returns The gravity at the given altitude in meters per second squared.
-   */
-  abstract getGravityAtAltitude(altitude: Feet | Meters | Altitude): MetersPerSecondSquared;
+### What to Keep (Minimal)
+- The core idea of **altitude-layered wind** (wind changes with height) — this is standard in real-world aviation weather and professional sims.
+- Support for **horizontal wind** (speed + direction) as the primary component.
+- The concept of a `WindField` or similar data container holding velocity vectors.
+- Interpolation between layers (linear or better) and handling of edge cases (below lowest / above highest layer).
 
-  /**
-   * Returns gravitational acceleration at mean sea level (for this model).
-   * Often used as reference for standard atmosphere calculations.
-   * 
-   * @returns The gravity at sea level in meters per second squared.
-   */
-  abstract getGravityAtSeaLevel(): MetersPerSecondSquared;
+### What to Discard / Heavily Change
+- **Tight coupling to `AtmosphereModel`** and `DecayModel` in the base class — This makes the wind model less flexible. Decay (surface friction) should be optional or handled as a modifier, not baked into every model.
+- `SimpleWindModel` implementation — It's overly complex for what it does (manual map sorting, custom binary search, ad-hoc decay calculations, manual direction interpolation with circular math). This is error-prone and hard to extend.
+- `DecayModel` hierarchy (LinearDecayModel etc.) — Too simplistic and rigid. Better to have configurable surface wind reduction as a parameter or separate boundary-layer effect.
+- `MSL` type dependency — Use your existing unified `Feet | Meters | Altitude` pattern (consistent with atmosphere and gravity).
+- `Wind` helper class — Redundant if you have a good `WindField`.
+- Vertical wind component treated as optional/zero — In reality, vertical winds (updrafts/downdrafts, mountain waves) matter for GA and some military ops. Make it first-class but default to zero.
+- Performance concerns — Map + manual resorting + linear search is inefficient if you add many layers or query frequently.
+
+Overall, the old design is **too procedural** and not extensible enough for turbulence, gusts, wind shear, or future weather integration.
+
+### Recommended New Architecture (Technically Defensible & Extensible)
+
+A good wind system for your simulator should support:
+
+- **Mean wind** (steady horizontal + vertical components per altitude layer)
+- **Wind shear** (gradual or sudden changes between layers)
+- **Turbulence / Gusts** (random or deterministic high-frequency variations)
+- **Boundary layer effects** (wind reduction near surface due to friction)
+- **Easy integration** with your existing `AtmosphereModel` (for density in force calculations) and future weather systems
+- **Performance** — Fast queries (every frame for flight dynamics)
+
+#### Core Design Principles
+- **Composition** — A `WindModel` can be simple (constant wind) or complex (layered + turbulence).
+- **Vector-based** — Use 3D velocity vectors (North/East/Down or body-frame) internally for accuracy. Direction/speed is for easy authoring/UI.
+- **Pluggable components** — Separate concerns: mean wind profile, shear, turbulence generator, surface friction.
+- **Extensibility** — Easy to add microbursts, mountain waves, jet streams, or real METAR/forecast injection later.
+- **Consistency** — Same unit handling as atmosphere/gravity (`Feet | Meters | Altitude`).
+
+#### Proposed Classes
+
+1. **WindVector** (or `WindVelocity`) — Immutable 3D wind in m/s (or knots) with helpers for direction/speed.
+2. **WindLayer** — Data structure for one altitude: base altitude + mean wind vector + optional turbulence intensity.
+3. **WindProfile** — Collection of sorted layers with interpolation.
+4. **Abstract WindModel**
+   - `getWindAtAltitude(altitude)` → returns current `WindField` / `WindVelocity` (including turbulence if enabled)
+   - `getMeanWindAtAltitude()` — steady component only (useful for debugging)
+   - Methods to set global wind, add layers, enable turbulence, etc.
+
+5. **Concrete Implementations**
+   - `ConstantWindModel` — Simple uniform wind (great for testing)
+   - `LayeredWindModel` — Multiple altitude layers with linear interpolation (replaces your `SimpleWindModel`)
+   - `TurbulentWindModel` or decorator — Adds Dryden / von Kármán turbulence on top of mean wind (standard in professional sims and FAA certification)
+   - Future: `MicroburstModel`, `MountainWaveModel`, `RealWeatherInjector`
+
+6. **Turbulence Generator** (separate or injectable)
+   - Use filtered white noise (Dryden model is common and computationally light)
+   - Configurable intensity, scale length, and correlation between axes
+
+#### Suggested API Sketch
+
+```typescript
+// src/wind/WindModel.ts
+export abstract class WindModel {
+  abstract getWindAtAltitude(altitude: Feet | Meters | Altitude): WindVelocity;
+  
+  // Optional: steady wind only (no turbulence)
+  abstract getMeanWindAtAltitude(altitude: Feet | Meters | Altitude): WindVelocity;
+
+  // For weather system integration
+  abstract setGlobalWind(speedKts: number, directionDeg: number, verticalKts?: number): void;
+  abstract addLayer(altitude: Meters, wind: WindVelocity, turbulenceIntensity?: number): void;
+  
+  // Query capabilities
+  abstract hasWind(): boolean;
+  abstract getSurfaceWind(): WindVelocity;
 }
+```
 
-import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
-import { GravityModel } from "./GravityModel";
+`WindVelocity` can provide:
+- `.horizontalSpeedKts`, `.directionDegrees`
+- `.northComponent`, `.eastComponent`, `.downComponent` (m/s)
+- Convenience methods for aircraft-relative wind (headwind, crosswind, tailwind)
 
-/**
- * Simple constant gravity model using standard value g₀ = 9.80665 m/s².
- *
- * This is the most commonly used model for general aviation and airliner simulations
- * where extreme precision in gravity variation is not required.
- */
-class ConstantGravityModel extends GravityModel {
-  public readonly standardGravity: MetersPerSecondSquared;
+#### Why This Is Better
+- **Technically defensible**: Aligns with NASA/FAA wind shear & turbulence models (Dryden/von Kármán for turbulence, layered profiles for shear).
+- **Extensible**: Add new turbulence models, special phenomena (microbursts), or data sources without changing core flight dynamics code.
+- **Performant**: Pre-sort layers once; use binary search or simple linear interpolation for queries.
+- **Consistent with your codebase**: Uses same unit types, prefers batched/efficient queries, keeps physics clean.
+- **Realistic for your aircraft range**: Handles low-level wind shear (critical for takeoff/landing), jet stream effects at altitude, and light turbulence for GA.
 
-  constructor(value: MetersPerSecondSquared = new MetersPerSecondSquared(9.80665)) {
-    super();
-    this.standardGravity = value;
+#### Implementation Priorities (Suggested Order)
+1. `WindVelocity` / `WindField` (clean 3D vector class)
+2. `ConstantWindModel` (simple baseline)
+3. `LayeredWindModel` with interpolation and surface friction option
+4. Basic turbulence overlay (Dryden filter — very common in sims)
+5. Integration tests with your `AtmosphereModel` (wind affects relative airspeed → forces)
+
+The old `SimpleWindModel` can be mostly discarded, but you can salvage the direction interpolation logic if needed (though vector math makes it simpler).
+
+Would you like me to:
+- Provide the full set of new classes starting with `WindVelocity` and the abstract `WindModel`?
+- Include a `LayeredWindModel` implementation with turbulence support?
+- Or first define the exact `WindVelocity` / `WindField` structure based on your units library?
+
+Let me know your preference and any specific requirements (e.g., must support vertical wind strongly? real-time weather injection? certification-level turbulence?). We can make this production-quality and extensible.
+
+
+import { Unit } from "@flight-sim/units";
+
+export class Vector3<UnitType extends Unit> {
+  public readonly x: UnitType;
+  public readonly y: UnitType;
+  public readonly z: UnitType;
+
+  constructor(x: UnitType, y: UnitType, z: UnitType) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+
+    this.validateComponentsAreFinite();
   }
 
-  getGravityAtAltitude(_: Feet | Meters | Altitude): MetersPerSecondSquared {
-    return this.standardGravity;
+  // ====================== Static Factories ======================
+
+  /**
+   * Creates a zero vector for any unit type.
+   *
+   * @param unitConstructor - The constructor for the unit type.
+   * @returns A new Vector3 with the zero components.
+   * @example
+   * ```typescript
+   * const zero = Vector3.createZero(Meters);
+   * ```
+   */
+  public static createZero<UnitType extends Unit>(
+    unitConstructor: new (value: number) => UnitType,
+  ): Vector3<UnitType> {
+    const zero = new unitConstructor(0);
+
+    return new Vector3<UnitType>(zero, zero, zero);
   }
 
-  getGravityAtSeaLevel(): MetersPerSecondSquared {
-    return this.standardGravity;
+  // ====================== Core Methods ======================
+
+  /**
+   * Converts the vector to the base units.
+   *
+   * @returns A new Vector3 with the components in the base units for the unit type.
+   * @example
+   * ```typescript
+   * const position = new Vector3(new Feet(0), new Feet(0), new Feet(0));
+   * const baseUnits = position.convertToBaseUnits();
+   * console.log(baseUnits.toString()); // "Vector3(0.00 m, 0.00 m, 0.00 m)"
+   * ```
+   */
+  public convertToBaseUnits(): Vector3<Unit> {
+    return new Vector3(
+      this.x.toSIUnits(),
+      this.y.toSIUnits(),
+      this.z.toSIUnits(),
+    );
   }
-}
-
-export default ConstantGravityModel;
-
-import { MetersPerSecondSquared, Feet, Meters, Altitude } from "@flight-sim/units";
-import { GravityModel } from "./GravityModel";
-
-/**
- * WGS84-based gravity model that varies with geometric altitude.
- *
- * Uses the simplified free-air approximation:
- *   g(h) ≈ g₀ * (1 - 2h/R)   where R ≈ 6371 km (mean Earth radius)
- *
- * This is sufficiently accurate up to 100 km for aircraft simulation.
- * Gravity decreases by about 0.003 m/s² per 10 km of altitude.
- */
-export class WGS84GravityModel extends GravityModel {
-  private static readonly EARTH_RADIUS_M = 6_371_000; // Mean radius, WGS84 approx
-
-  private readonly seaLevelGravity: MetersPerSecondSquared;
-
-  constructor(seaLevelG: MetersPerSecondSquared = new MetersPerSecondSquared(9.80665)) {
-    super();
-    this.seaLevelGravity = seaLevelG;
+  
+  public toReadableObject(): { x: string; y: string; z: string } {
+    return {
+      x: this.x.toString(),
+      y: this.y.toString(),
+      z: this.z.toString(),
+    };
   }
 
-  getGravityAtAltitude(altitude: Feet | Meters | Altitude): MetersPerSecondSquared {
-    const h = altitude.toMeters().value;
+  public toString(): string {
+    return `Vector3(${this.x.toString()}, ${this.y.toString()}, ${this.z.toString()})`;
+  }
 
-    // Prevent unrealistic values at very high altitudes
-    if (h > 100_000) {
-      throw new Error(`Gravity requested at extreme altitude: ${h}m`);
+  public toArray(): [UnitType, UnitType, UnitType] {
+    return [this.x, this.y, this.z];
+  }
+
+  public toRawArray(): [number, number, number] {
+    return [this.x.value, this.y.value, this.z.value];
+  }
+
+  private validateComponentsAreFinite(): void {
+    if (
+      !isFinite(this.x.value) ||
+      !isFinite(this.y.value) ||
+      !isFinite(this.z.value)
+    ) {
+      throw new Error(
+        "Components must be finite numbers (no NaN or Infinity). Values: " +
+          JSON.stringify({
+            x: this.x.value,
+            y: this.y.value,
+            z: this.z.value,
+          }),
+      );
+    }
+  }
+
+  // ====================== Math Operations ======================
+
+  /**
+   * Adds two vectors of the same unit type.
+   *
+   * @param other - The vector to add to this vector.
+   * @returns A new Vector3 with the sum of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const v3 = v1.addVector(v2);
+   * console.log(v3.toString()); // "Vector3(5.00 m, 7.00 m, 9.00 m)"
+   * ```
+   */
+  public addVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    // We convert to SI, add in base units, then convert back to the original unit type
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    const resultBaseX = thisBase.x.add(otherBase.x);
+    const resultBaseY = thisBase.y.add(otherBase.y);
+    const resultBaseZ = thisBase.z.add(otherBase.z);
+
+    let xConstructor = this.x.constructor as typeof Unit;
+    let yConstructor = this.y.constructor as typeof Unit;
+    let zConstructor = this.z.constructor as typeof Unit;
+
+    return new Vector3(
+      xConstructor.fromSIValue(resultBaseX) as UnitType,
+      yConstructor.fromSIValue(resultBaseY) as UnitType,
+      zConstructor.fromSIValue(resultBaseZ) as UnitType,
+    );
+  }
+
+  /**
+   * Subtracts two vectors of the same unit type.
+   *
+   * @param other - The vector to subtract from this vector.
+   * @returns A new Vector3 with the difference of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const v3 = v1.subtractVector(v2);
+   * console.log(v3.toString()); // "Vector3(-3.00 m, -3.00 m, -3.00 m)"
+   * ```
+   */
+  public subtractVector(other: Vector3<UnitType>): Vector3<UnitType> {
+    // We convert to SI, subtract in base units, then convert back to the original unit type
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    const resultBaseX = thisBase.x.subtract(otherBase.x);
+    const resultBaseY = thisBase.y.subtract(otherBase.y);
+    const resultBaseZ = thisBase.z.subtract(otherBase.z);
+
+    let xConstructor = this.x.constructor as typeof Unit;
+    let yConstructor = this.y.constructor as typeof Unit;
+    let zConstructor = this.z.constructor as typeof Unit;
+
+    return new Vector3(
+      xConstructor.fromSIValue(resultBaseX) as UnitType,
+      yConstructor.fromSIValue(resultBaseY) as UnitType,
+      zConstructor.fromSIValue(resultBaseZ) as UnitType,
+    );
+  }
+
+  /**
+   * Scales a vector by a scalar.
+   *
+   * @param scalar - The scalar to scale the vector by.
+   * @returns A new Vector3 with the scaled vector.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = v1.scaleByScalar(2);
+   * console.log(v2.toString()); // "Vector3(2.00 m, 4.00 m, 6.00 m)"
+   * ```
+   */
+  public scaleByScalar(scalar: number): Vector3<UnitType> {
+    return new Vector3(
+      this.x.multiplyByScalar(scalar) as UnitType,
+      this.y.multiplyByScalar(scalar) as UnitType,
+      this.z.multiplyByScalar(scalar) as UnitType,
+    );
+  }
+
+  /**
+   * Returns the squared magnitude (length²) of the vector in the current unit type.
+   *
+   * This is mathematically equivalent to magnitude()² but avoids the expensive square root.
+   *
+   * In flight sims this is preferred for:
+   * - Fast distance comparisons (e.g. is aircraft within range?)
+   * - Performance-critical checks (stall speed, ground proximity, etc.)
+   * - Avoiding floating-point precision issues near zero
+   *
+   * @returns The squared magnitude of the vector in the current unit type.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(3), new Meters(4), new Meters(5));
+   * const sqMag = v1.squaredMagnitude();
+   * console.log(sqMag.toString()); // "50.00 m^2"
+   * ```
+   */
+  public squaredMagnitude(): number {
+    const base = this.convertToBaseUnits();
+
+    const sqMagValue =
+      base.x.value * base.x.value +
+      base.y.value * base.y.value +
+      base.z.value * base.z.value;
+
+    return sqMagValue;
+  }
+
+  /**
+   * Returns the magnitude (length) of the vector in its current unit type.
+   *
+   * For positions/distances this gives meters/feet/etc.
+   * For velocities it gives speed in the velocity unit.
+   * For forces it gives the total force magnitude in Newtons.
+   *
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(3), new Meters(4), new Meters(5));
+   * const mag = v1.magnitude();
+   * console.log(mag.toString()); // "7.07 m"
+   * ```
+   */
+  public magnitude(): UnitType {
+    const sqMag = this.squaredMagnitude();
+
+    const magValue = Math.sqrt(sqMag);
+
+    const constructor = this.x.constructor as typeof Unit;
+
+    return constructor.fromSIValue(magValue) as UnitType;
+  }
+
+  /**
+   * Returns whether the vector is approximately zero.
+   *
+   * @param epsilon - The tolerance for the approximation.
+   * @returns True if the vector is approximately zero, false otherwise.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(0), new Meters(0), new Meters(0));
+   * const isZero = v1.isApproximatelyZero();
+   * console.log(isZero); // true
+   * ```
+   */
+  public isApproximatelyZero(epsilon: number = 1e-8): boolean {
+    return this.squaredMagnitude() < epsilon * epsilon;
+  }
+
+  /**
+   * Returns the squared distance between this vector and another vector.
+   *
+   * @param other - The vector to calculate the distance to.
+   * @returns The squared distance between the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const distanceSquared = v1.distanceSquaredTo(v2);
+   * console.log(distanceSquared); // "27.00 m^2"
+   * ```
+   */
+  public distanceSquaredTo(other: Vector3<UnitType>): number {
+    return this.subtractVector(other).squaredMagnitude();
+  }
+
+  /**
+   * Returns the dot product of this vector and another vector.
+   *
+   * @param other - The vector to calculate the dot product with.
+   * @returns The dot product of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const dotProduct = v1.dotProductWith(v2);
+   * console.log(dotProduct); // "32.00 (m^2)"
+   * ```
+   */
+  public dotProductWith(other: Vector3<UnitType>): number {
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    return (
+      thisBase.x.value * otherBase.x.value +
+      thisBase.y.value * otherBase.y.value +
+      thisBase.z.value * otherBase.z.value
+    );
+  }
+
+  /**
+   * Returns a normalized (unit) vector in the same direction.
+   *
+   * @returns A new Vector3 with the normalized vector.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(3), new Meters(4), new Meters(5));
+   * const normalized = v1.normalize();
+   * console.log(normalized.toString()); // "Vector3(0.4242 m, 0.5656 m, 0.7071 m)"
+   * ```
+   */
+  public normalize(): Vector3<UnitType> {
+    const sqMag = this.squaredMagnitude();
+
+    if (sqMag <= 0 || !isFinite(sqMag)) {
+      throw new Error(
+        `Cannot normalize zero or near-zero length vector: ${this.toString()}`,
+      );
     }
 
-    // Free-air correction: g decreases linearly with height
-    const factor = 1 - (2 * h) / WGS84GravityModel.EARTH_RADIUS_M;
-    const g = this.seaLevelGravity.value * factor;
-
-    return new MetersPerSecondSquared(Math.max(g, 9.75)); // safety floor is 9.75 m/s² so that we don't get negative gravity
+    return this.scaleByScalar(1 / Math.sqrt(sqMag)) as Vector3<UnitType>;
   }
 
-  getGravityAtSeaLevel(): MetersPerSecondSquared {
-    return this.seaLevelGravity;
+  /**
+   * Returns the cross product of this vector and another vector.
+   *
+   * @param other - The vector to calculate the cross product with.
+   * @returns The cross product of the two vectors.
+   * @example
+   * ```typescript
+   * const v1 = new Vector3(new Meters(1), new Meters(2), new Meters(3));
+   * const v2 = new Vector3(new Meters(4), new Meters(5), new Meters(6));
+   * const crossProduct = v1.crossProductWith(v2);
+   * console.log(crossProduct); // "[2.00, -2.00, 2.00]"
+   * ```
+   */
+  public crossProductWith(other: Vector3<any>): [number, number, number] {
+    const thisBase = this.convertToBaseUnits();
+    const otherBase = other.convertToBaseUnits();
+
+    const cx =
+      thisBase.y.value * otherBase.z.value -
+      thisBase.z.value * otherBase.y.value;
+    const cy =
+      thisBase.z.value * otherBase.x.value -
+      thisBase.x.value * otherBase.z.value;
+    const cz =
+      thisBase.x.value * otherBase.y.value -
+      thisBase.y.value * otherBase.x.value;
+
+    return [cx, cy, cz];
+  }
+}
+
+import { Meters } from "@flight-sim/units";
+import { Vector3 } from "./Vector3";
+
+export class PositionVector3 extends Vector3<Meters> {
+  get north(): Meters {
+    return this.x;
+  }
+  get east(): Meters {
+    return this.y;
+  }
+  get down(): Meters {
+    return this.z;
+  }
+
+  constructor(north: Meters, east: Meters, down: Meters) {
+    super(north, east, down);
+  }
+
+  /**
+   * Creates a position vector using the SI units for position (Meters).
+   *
+   * @param northMeters - The north component of the position in Meters.
+   * @param eastMeters - The east component of the position in Meters.
+   * @param downMeters - The down component of the position in Meters.
+   * @returns A new PositionVector3 with the position components in Meters.
+   */
+  public static createFromMeters(
+    northMeters: number | Meters,
+    eastMeters: number | Meters,
+    downMeters: number | Meters,
+  ): PositionVector3 {
+    return new PositionVector3(
+      northMeters instanceof Meters ? northMeters : new Meters(northMeters),
+      eastMeters instanceof Meters ? eastMeters : new Meters(eastMeters),
+      downMeters instanceof Meters ? downMeters : new Meters(downMeters),
+    );
+  }
+
+  public override toReadableObject(): {
+    x: string;
+    y: string;
+    z: string;
+    north: string;
+    east: string;
+    down: string;
+  } {
+    const o = super.toReadableObject();
+    return { ...o, north: o.x, east: o.y, down: o.z };
+  }
+
+  public override toString(): string {
+    return `PositionVector(${this.north.toString()}, ${this.east.toString()}, ${this.down.toString()})`;
   }
 }
